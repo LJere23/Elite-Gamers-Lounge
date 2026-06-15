@@ -1,0 +1,273 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Player {
+  id                  String    @id @default(uuid())
+  name                String
+  gamerTag            String    @unique
+  email               String    @unique
+  phone               String?
+  dateOfBirth         DateTime?
+  city                String    @default("Gweru")
+  age                 Int?
+  membershipTier      String    @default("Villager")
+  membershipExpiresAt DateTime?
+  status              String    @default("active")
+  xp                  Int       @default(0)
+  rank                String    @default("Villager")
+  visitCount          Int       @default(0)
+  favoriteGame        String?
+  joinedAt            DateTime  @default(now())
+  lastVisitAt         DateTime?
+  pin                 String?
+  pinSalt             String?
+  avatarUrl           String?
+
+  titles         PlayerTitle[]
+  xpLedger       XpLedger[]
+  jobCompletions JobCompletion[]
+  entries        TournamentEntry[]
+}
+
+model PlayerTitle {
+  id        String   @id @default(uuid())
+  playerId  String
+  title     String
+  awardedAt DateTime @default(now())
+
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+}
+
+model XpLedger {
+  id        String   @id @default(uuid())
+  playerId  String
+  amount    Int
+  source    String
+  jobId     String?
+  note      String?
+  createdAt DateTime @default(now())
+
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+}
+
+model Job {
+  id          String @id @default(uuid())
+  name        String
+  description String
+  xpReward    Int
+  active      Boolean @default(true)
+
+  completions JobCompletion[]
+}
+
+model JobCompletion {
+  id          String   @id @default(uuid())
+  playerId    String
+  jobId       String
+  completedAt DateTime @default(now())
+
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  job    Job    @relation(fields: [jobId], references: [id], onDelete: Cascade)
+}
+
+model Device {
+  id               String  @id @default(uuid())
+  name             String
+  type             String
+  hourlyRate       Float
+  supportedGames   String  @default("[]")
+  status           String  @default("available")
+  location         String  @default("Main Floor")
+  currentSessionId String?
+}
+
+model Session {
+  id               String   @id @default(uuid())
+  playerName       String
+  game             String
+  deviceId         String
+  deviceName       String
+  startTime        DateTime
+  endTime          DateTime
+  durationHours    Float
+  totalPrice       Float
+  remainingMinutes Int      @default(0)
+  status           String   @default("ACTIVE")
+  createdAt        DateTime @default(now())
+}
+
+model WifiSession {
+  id               String   @id @default(uuid())
+  name             String
+  device           String   @default("Laptop")
+  station          String   @default("Main Floor")
+  status           String   @default("active")
+  startedAt        DateTime @default(now())
+  expiresAt        DateTime
+  durationHours    Float
+  remainingMinutes Int      @default(0)
+  priceUsd         Float    @default(0)
+}
+
+model Tournament {
+  id               String    @id @default(uuid())
+  name             String
+  game             String
+  category         String
+  format           String
+  status           String    @default("scheduled")
+  startAt          DateTime
+  endAt            DateTime
+  entries          Int       @default(0)
+  prizeUsd         Float     @default(0)
+  prizeDescription String    @default("")
+  scoringSystem    String    @default("best_of_1")
+  currentRound     Int?
+  winnerId         String?
+  winnerName       String?
+  runnerUpId       String?
+  runnerUpName     String?
+  completedAt      DateTime?
+  createdAt        DateTime  @default(now())
+
+  tournamentEntries TournamentEntry[]
+  matches           TournamentMatch[]
+}
+
+model TournamentEntry {
+  id           String   @id @default(uuid())
+  tournamentId String
+  playerId     String
+  playerName   String
+  registeredAt DateTime @default(now())
+  status       String   @default("registered")
+  points       Int      @default(0)
+  wins         Int      @default(0)
+  losses       Int      @default(0)
+  bestLapTime  Float?
+  lapTimeNote  String?
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  player     Player     @relation(fields: [playerId], references: [id], onDelete: Cascade)
+}
+
+model TournamentMatch {
+  id           String   @id @default(uuid())
+  tournamentId String
+  playerAId    String
+  playerAName  String
+  playerBId    String
+  playerBName  String
+  scheduledAt  DateTime @default(now())
+  status       String   @default("scheduled")
+  scoreA       Int?
+  scoreB       Int?
+  winnerId     String?
+  winnerName   String?
+  round        Int      @default(1)
+  stage        String   @default("Round 1")
+  isBye        Boolean  @default(false)
+  bracket      String   @default("winner")
+  game1ScoreA  Int?
+  game1ScoreB  Int?
+  game2ScoreA  Int?
+  game2ScoreB  Int?
+  game3ScoreA  Int?
+  game3ScoreB  Int?
+  seriesWinsA  Int      @default(0)
+  seriesWinsB  Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+}
+
+model MembershipPlan {
+  id          String @id @default(uuid())
+  name        String
+  priceUsd    Float
+  period      String
+  description String
+  perks       String @default("[]")
+}
+
+model Announcement {
+  id             String    @id @default(uuid())
+  message        String
+  tournamentId   String?
+  tournamentName String?
+  winnerName     String?
+  prizeAmount    String?
+  type           String?
+  createdAt      DateTime  @default(now())
+  expiresAt      DateTime?
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  message   String
+  severity  String   @default("info")
+  createdAt DateTime @default(now())
+}
+
+model LoungeSettings {
+  id                  String  @id @default("singleton")
+  name                String  @default("Gweru's Gamers Lounge")
+  tagline             String  @default("Gweru's Premier Gaming Experience")
+  contactEmail        String  @default("")
+  contactPhone        String  @default("")
+  address             String  @default("Gweru, Zimbabwe")
+  sessionRate         Float   @default(1.0)
+  wifiRate            Float   @default(0.5)
+  currency            String  @default("USD")
+  openingTime         String  @default("09:00")
+  closingTime         String  @default("22:00")
+  whatsappNumber      String  @default("263784497531")
+  adminPassword       String  @default("admin123")
+  communityHeadline   String  @default("Join Our Gaming Community")
+  communityBody       String  @default("Gweru's Gamers Lounge is more than a gaming venue — it's a community of competitive players, casual gamers, and esports enthusiasts all under one roof.")
+  communityStat1Label String  @default("Members")
+  communityStat1Value String  @default("200+")
+  communityStat2Label String  @default("Tournaments")
+  communityStat2Value String  @default("50+")
+  communityStat3Label String  @default("Games Available")
+  communityStat3Value String  @default("30+")
+  countdownEnabled    Boolean @default(false)
+  countdownTitle      String  @default("Next Event")
+  countdownDate       String  @default("")
+}
+
+model Testimonial {
+  id        String @id @default(uuid())
+  name      String
+  role      String
+  message   String
+  sortOrder Int    @default(0)
+}
+
+model GalleryImage {
+  id         String   @id @default(uuid())
+  filename   String
+  caption    String?
+  sortOrder  Int      @default(0)
+  uploadedAt DateTime @default(now())
+}
+
+model BlogPost {
+  id          String    @id @default(uuid())
+  title       String
+  slug        String    @unique
+  content     String
+  excerpt     String?
+  author      String    @default("Admin")
+  imageUrl    String?
+  published   Boolean   @default(false)
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}

@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(npx prisma *)",
+      "Bash(curl *)",
+      "Bash(python3 -c \"import json,sys; ts=json.load\\(sys.stdin\\); print\\(f'{len\\(ts\\)} tournaments'\\); print\\(ts[0]['id'] if ts else 'none'\\)\")",
+      "Bash(python3 -c \"import json,sys; ps=json.load\\(sys.stdin\\); print\\(f'{len\\(ps\\)} players'\\); [print\\(f'  {p[\\\\\"id\\\\\"]} {p[\\\\\"name\\\\\"]} tier={p[\\\\\"membershipTier\\\\\"]}'\\) for p in ps[:5]]\")",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('durationHours:', d.get\\('durationHours'\\), 'remainingMinutes:', d.get\\('remainingMinutes'\\)\\)\")",
+      "WebSearch",
+      "WebFetch(domain:pngimg.com)",
+      "WebFetch(domain:www.kindpng.com)",
+      "Bash(file /Users/user/gwerus-gamers-lounge/public/sprites/*.png)",
+      "Bash(mkdir -p /Users/user/gwerus-gamers-lounge/src/app/api/gallery/\\\\[id\\\\])",
+      "Bash(mkdir -p /Users/user/gwerus-gamers-lounge/src/app/api/blog/\\\\[slug\\\\])",
+      "Bash(mkdir -p \"/Users/user/gwerus-gamers-lounge/src/app/\\(public\\)/blog/[slug]\")",
+      "Bash(npx tsc *)",
+      "Bash(npm run *)",
+      "Bash(CLAUDE_CODE_TMPDIR=/tmp npx tsc --noEmit)"
+    ]
+  }
+}

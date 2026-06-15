@@ -1,0 +1,28 @@
+[
+  {
+    "id": "device-1",
+    "name": "PS5-01",
+    "category": "PlayStation",
+    "status": "available",
+    "hourlyRate": 2,
+    "totalSessions": 45
+  },
+  {
+    "id": "device-2",
+    "name": "Racing Sim 1",
+    "category": "Racing Sim",
+    "status": "busy",
+    "hourlyRate": 5,
+    "currentGame": "Assetto Corsa",
+    "currentPlayer": "Leslie",
+    "totalSessions": 81
+  },
+  {
+    "id": "device-3",
+    "name": "Chess Table A",
+    "category": "Chess",
+    "status": "maintenance",
+    "hourlyRate": 1,
+    "totalSessions": 12
+  }
+]
