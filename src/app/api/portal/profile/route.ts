@@ -20,14 +20,11 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "Name must be 40 characters or fewer." }, { status: 400 });
     }
 
-    // Check if another player already has this name (case-insensitive)
-    const conflict = await prisma.player.findFirst({
-      where: {
-        name: { equals: name, mode: "insensitive" },
-        NOT: { id: playerId },
-      },
-    });
-    if (conflict) {
+    // Check if another player already has this name (case-insensitive, SQLite-compatible)
+    const conflicts = await prisma.$queryRaw<{ id: string }[]>`
+      SELECT id FROM "Player" WHERE LOWER(name) = LOWER(${name}) AND id != ${playerId} LIMIT 1
+    `;
+    if (conflicts.length > 0) {
       return NextResponse.json({ error: "That name is already taken. Please choose a different one." }, { status: 409 });
     }
 
