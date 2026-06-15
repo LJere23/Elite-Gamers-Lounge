@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { unlink } from "fs/promises";
-import path from "path";
+import { del } from "@vercel/blob";
 
 export async function DELETE(
   _request: NextRequest,
@@ -16,14 +15,10 @@ export async function DELETE(
 
     await prisma.galleryImage.delete({ where: { id } });
 
-    const filePath = path.join(
-      process.cwd(),
-      "public",
-      "gallery",
-      "uploads",
-      image.filename
-    );
-    await unlink(filePath).catch(() => {});
+    // filename now stores the full blob URL
+    if (image.filename.startsWith("https://")) {
+      await del(image.filename).catch(() => {});
+    }
 
     return NextResponse.json({ success: true });
   } catch {

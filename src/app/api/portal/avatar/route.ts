@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile, unlink } from "fs/promises";
-import path from "path";
-import { prisma } from "@/lib/db";
+import { put, del } from "@vercel/blob";
 import { cookies } from "next/headers";
+import { prisma } from "@/lib/db";
 
 async function getPlayer() {
   const cookieStore = await cookies();
@@ -34,22 +33,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "File too large (max 5 MB)" }, { status: 400 });
     }
 
-    // Delete old avatar file if it exists
+    // Delete old avatar from blob storage if it exists
     if (player.avatarUrl) {
-      const oldPath = path.join(process.cwd(), "public", player.avatarUrl);
-      await unlink(oldPath).catch(() => {});
+      await del(player.avatarUrl).catch(() => {});
     }
 
     const ext = file.name.split(".").pop() ?? "jpg";
-    const filename = `avatar-${player.id}-${Date.now()}.${ext}`;
-    const savePath = path.join(process.cwd(), "public", "avatars", filename);
-    const buffer = Buffer.from(await file.arrayBuffer());
-    await writeFile(savePath, buffer);
+    const filename = `avatars/avatar-${player.id}-${Date.now()}.${ext}`;
+    const blob = await put(filename, file, { access: "public" });
 
-    const avatarUrl = `/avatars/${filename}`;
-    await prisma.player.update({ where: { id: player.id }, data: { avatarUrl } });
+    await prisma.player.update({ where: { id: player.id }, data: { avatarUrl: blob.url } });
 
-    return NextResponse.json({ avatarUrl });
+    return NextResponse.json({ avatarUrl: blob.url });
   } catch (error) {
     console.error("POST /api/portal/avatar error:", error);
     return NextResponse.json({ error: "Upload failed" }, { status: 500 });
@@ -64,8 +59,7 @@ export async function DELETE(_req: NextRequest) {
     }
 
     if (player.avatarUrl) {
-      const filePath = path.join(process.cwd(), "public", player.avatarUrl);
-      await unlink(filePath).catch(() => {});
+      await del(player.avatarUrl).catch(() => {});
     }
 
     await prisma.player.update({ where: { id: player.id }, data: { avatarUrl: null } });

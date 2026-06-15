@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { writeFile } from "fs/promises";
-import path from "path";
+import { put } from "@vercel/blob";
 
 export async function GET() {
   try {
@@ -30,13 +29,11 @@ export async function POST(request: NextRequest) {
     }
 
     const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
-    const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-    const uploadDir = path.join(process.cwd(), "public", "gallery", "uploads");
-    const bytes = await file.arrayBuffer();
-    await writeFile(path.join(uploadDir, filename), Buffer.from(bytes));
+    const filename = `gallery/gallery-${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    const blob = await put(filename, file, { access: "public" });
 
     const image = await prisma.galleryImage.create({
-      data: { filename, caption: caption || null },
+      data: { filename: blob.url, caption: caption || null },
     });
 
     return NextResponse.json(image, { status: 201 });

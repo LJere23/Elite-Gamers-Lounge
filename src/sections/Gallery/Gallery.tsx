@@ -42,7 +42,7 @@ export default function Gallery() {
                 className="aspect-square rounded-3xl overflow-hidden border border-white/10 hover:scale-[1.02] transition-transform duration-200 relative group"
               >
                 <img
-                  src={`/gallery/uploads/${img.filename}`}
+                  src={img.filename.startsWith("https://") ? img.filename : `/gallery/uploads/${img.filename}`}
                   alt={img.caption || "Gallery image"}
                   className="w-full h-full object-cover"
                 />
