@@ -16,7 +16,11 @@
       "Bash(mkdir -p \"/Users/user/gwerus-gamers-lounge/src/app/\\(public\\)/blog/[slug]\")",
       "Bash(npx tsc *)",
       "Bash(npm run *)",
-      "Bash(CLAUDE_CODE_TMPDIR=/tmp npx tsc --noEmit)"
+      "Bash(CLAUDE_CODE_TMPDIR=/tmp npx tsc --noEmit)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(git rm *)"
     ]
   }
 }
