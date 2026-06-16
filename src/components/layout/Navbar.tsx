@@ -74,10 +74,14 @@ export default function Navbar() {
           <Link href="/quests" className="font-bold text-yellow-400">
             ⚔ Quest Board
           </Link>
+          <Link href="/portal" className="font-bold text-amber-400">
+            🃏 Guild Portal
+          </Link>
 
-          <button className="bg-purple-600 hover:bg-purple-500 transition px-5 py-3 rounded-full neon-glow">
-            Book Session
-          </button>
+          <Link href="/register" className="flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-500 transition px-5 py-3 rounded-full neon-glow">
+            <Trophy size={18} />
+            Register
+          </Link>
 
         </div>
       )}
