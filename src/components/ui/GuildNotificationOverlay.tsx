@@ -102,7 +102,7 @@ export default function GuildNotificationOverlay({ notifications, gamerTag, avat
       const canvas = await html2canvas(cardRef.current, {
         useCORS: true,
         backgroundColor: null,
-        scale: 2,  // 540×540 card × 2 = 1080×1080 crisp output
+        scale: 4,  // 540×540 card × 4 = 2160×2160 high-res output
         logging: false,
       });
 

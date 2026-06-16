@@ -75,7 +75,7 @@ function EGLLogo({ accent }: { accent: string }) {
   );
 }
 
-// ── Share card (540×540 DOM, captured at 2× = 1080×1080 output) ──────────────
+// ── Share card (540×540 DOM, captured at 4× = 2160×2160 output) ──────────────
 
 const GuildShareCard = forwardRef<HTMLDivElement, Props>(function GuildShareCard(
   { type, heading, gamerTag, rankOrTitle, avatarUrl, playerTitle, xp, memberSince },
@@ -95,8 +95,9 @@ const GuildShareCard = forwardRef<HTMLDivElement, Props>(function GuildShareCard
       ref={ref}
       style={{
         position: "fixed",
-        left: "-9999px",
         top: 0,
+        left: 0,
+        transform: "translateX(-9999px)",
         width: "540px",
         height: "540px",
         background: p.bg,
