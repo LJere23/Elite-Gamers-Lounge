@@ -15,13 +15,18 @@ const TYPE_LABEL: Record<string, string> = {
 export default async function Announcements() {
   const now = new Date();
 
-  const rows = await prisma.announcement.findMany({
-    where: {
-      OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
-    },
-    orderBy: { createdAt: "desc" },
-    take: 10,
-  });
+  let rows: Awaited<ReturnType<typeof prisma.announcement.findMany>> = [];
+  try {
+    rows = await prisma.announcement.findMany({
+      where: {
+        OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
+      },
+      orderBy: { createdAt: "desc" },
+      take: 10,
+    });
+  } catch {
+    // DB unavailable (e.g. cold start) — render empty state silently
+  }
 
   if (rows.length === 0) {
     return (

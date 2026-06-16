@@ -4,9 +4,14 @@ import { MapPin, Phone, Mail, Clock, MessageCircle } from "lucide-react";
 export const dynamic = "force-dynamic";
 
 export default async function ContactPage() {
-  const settings = await prisma.loungeSettings.findUnique({
-    where: { id: "singleton" },
-  });
+  let settings: Awaited<ReturnType<typeof prisma.loungeSettings.findUnique>> = null;
+  try {
+    settings = await prisma.loungeSettings.findUnique({
+      where: { id: "singleton" },
+    });
+  } catch {
+    // DB unavailable — use defaults
+  }
 
   const address = settings?.address || "Gweru, Zimbabwe";
   const phone = settings?.contactPhone || "";

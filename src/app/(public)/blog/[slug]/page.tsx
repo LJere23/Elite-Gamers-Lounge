@@ -55,9 +55,14 @@ export default async function BlogPostPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const post = await prisma.blogPost.findUnique({
-    where: { slug, published: true },
-  });
+  let post: Awaited<ReturnType<typeof prisma.blogPost.findUnique>> = null;
+  try {
+    post = await prisma.blogPost.findUnique({
+      where: { slug, published: true },
+    });
+  } catch {
+    // DB unavailable
+  }
 
   if (!post) notFound();
 

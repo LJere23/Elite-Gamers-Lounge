@@ -1,16 +1,10 @@
-import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 
-async function getPlayerFromCookie(): Promise<string | null> {
-  const cookieStore = await cookies();
-  return cookieStore.get("portal_player_id")?.value ?? null;
-}
-
 // GET — return unread notifications for logged-in player
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const playerId = await getPlayerFromCookie();
+    const playerId = request.cookies.get("portal_player_id")?.value;
     if (!playerId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const notifications = await prisma.notification.findMany({
@@ -26,9 +20,9 @@ export async function GET() {
 }
 
 // POST — mark all notifications as read for logged-in player
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
-    const playerId = await getPlayerFromCookie();
+    const playerId = request.cookies.get("portal_player_id")?.value;
     if (!playerId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     await prisma.notification.updateMany({

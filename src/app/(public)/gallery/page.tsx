@@ -3,9 +3,14 @@ import { prisma } from "@/lib/db";
 export const dynamic = "force-dynamic";
 
 export default async function GalleryPage() {
-  const images = await prisma.galleryImage.findMany({
-    orderBy: [{ sortOrder: "asc" }, { uploadedAt: "desc" }],
-  });
+  let images: Awaited<ReturnType<typeof prisma.galleryImage.findMany>> = [];
+  try {
+    images = await prisma.galleryImage.findMany({
+      orderBy: [{ sortOrder: "asc" }, { uploadedAt: "desc" }],
+    });
+  } catch {
+    // DB unavailable — show empty state
+  }
 
   return (
     <main className="min-h-screen pt-32 px-6 pb-20">

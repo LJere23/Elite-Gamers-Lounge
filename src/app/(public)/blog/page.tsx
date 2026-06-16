@@ -5,10 +5,15 @@ import { Calendar, User } from "lucide-react";
 export const dynamic = "force-dynamic";
 
 export default async function BlogPage() {
-  const posts = await prisma.blogPost.findMany({
-    where: { published: true },
-    orderBy: { publishedAt: "desc" },
-  });
+  let posts: Awaited<ReturnType<typeof prisma.blogPost.findMany>> = [];
+  try {
+    posts = await prisma.blogPost.findMany({
+      where: { published: true },
+      orderBy: { publishedAt: "desc" },
+    });
+  } catch {
+    // DB unavailable — show empty state
+  }
 
   return (
     <main className="min-h-screen pt-32 px-6 pb-20">
