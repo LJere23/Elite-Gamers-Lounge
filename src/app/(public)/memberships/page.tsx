@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { readStore } from "@/lib/database";
 import { MembershipPlan } from "@/types/admin";
 

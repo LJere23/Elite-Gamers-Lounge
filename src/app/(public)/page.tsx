@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import Hero from "@/sections/Hero/Hero";
 import Announcements from "@/sections/Announcements/Announcements";
 import Countdown from "@/sections/Countdown/Countdown";
