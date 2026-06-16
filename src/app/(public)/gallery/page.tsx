@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 export default async function GalleryPage() {
   const images = await prisma.galleryImage.findMany({
@@ -13,7 +13,7 @@ export default async function GalleryPage() {
         <p className="uppercase tracking-[0.3em] text-cyan-400 mb-4">Atmosphere</p>
         <h1 className="text-5xl font-black uppercase mb-4">Gallery</h1>
         <p className="text-zinc-400 mb-16">
-          A look inside Gweru&apos;s premier gaming experience.
+          A look inside Elite Gamers Lounge.
         </p>
 
         {images.length === 0 ? (

@@ -4,15 +4,7 @@ import Image from "next/image";
 import { prisma } from "@/lib/db";
 import { ArrowLeft, Calendar, User } from "lucide-react";
 
-export const revalidate = 60;
-
-export async function generateStaticParams() {
-  const posts = await prisma.blogPost.findMany({
-    where: { published: true },
-    select: { slug: true },
-  });
-  return posts.map((p) => ({ slug: p.slug }));
-}
+export const dynamic = "force-dynamic";
 
 type Block = { type: "heading1" | "heading2" | "list" | "paragraph"; content: string };
 
