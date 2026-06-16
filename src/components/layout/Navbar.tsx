@@ -7,11 +7,19 @@ import { Menu, X, Trophy, Gamepad2 } from "lucide-react";
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [gamerTag, setGamerTag] = useState<string | null>(null);
   const pathname = usePathname();
 
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    fetch("/api/portal/me")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => { if (data?.player?.gamerTag) setGamerTag(data.player.gamerTag); })
+      .catch(() => {});
+  }, [pathname]); // re-check on route change so login/logout reflects immediately
 
   return (
     <nav className="fixed top-0 left-0 w-full z-50 bg-black/40 backdrop-blur-md border-b border-purple-500/20">
@@ -46,10 +54,16 @@ export default function Navbar() {
           <Link href="/portal" className="text-sm uppercase tracking-wide text-amber-400 hover:text-amber-300 transition font-semibold">
             Guild Portal
           </Link>
-          <Link href="/register" className="flex items-center gap-2 bg-purple-600 hover:bg-purple-500 transition px-5 py-2 rounded-full neon-glow">
-            <Trophy size={18} />
-            Register
-          </Link>
+          {gamerTag ? (
+            <Link href={`/portal/${gamerTag}`} className="flex items-center gap-2 bg-amber-500 hover:bg-amber-400 transition px-5 py-2 rounded-full font-bold text-sm uppercase text-[#0F0D1E]">
+              🃏 My Card
+            </Link>
+          ) : (
+            <Link href="/register" className="flex items-center gap-2 bg-purple-600 hover:bg-purple-500 transition px-5 py-2 rounded-full neon-glow">
+              <Trophy size={18} />
+              Register
+            </Link>
+          )}
         </div>
 
         <button
@@ -78,10 +92,16 @@ export default function Navbar() {
             🃏 Guild Portal
           </Link>
 
-          <Link href="/register" className="flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-500 transition px-5 py-3 rounded-full neon-glow">
-            <Trophy size={18} />
-            Register
-          </Link>
+          {gamerTag ? (
+            <Link href={`/portal/${gamerTag}`} className="flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 transition px-5 py-3 rounded-full font-bold text-[#0F0D1E]">
+              🃏 My Guild Card
+            </Link>
+          ) : (
+            <Link href="/register" className="flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-500 transition px-5 py-3 rounded-full neon-glow">
+              <Trophy size={18} />
+              Register
+            </Link>
+          )}
 
         </div>
       )}
