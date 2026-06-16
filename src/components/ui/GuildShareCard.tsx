@@ -95,9 +95,8 @@ const GuildShareCard = forwardRef<HTMLDivElement, Props>(function GuildShareCard
       ref={ref}
       style={{
         position: "fixed",
-        top: 0,
-        left: 0,
-        transform: "translateX(-9999px)",
+        top: "-540px",
+        left: "0",
         width: "540px",
         height: "540px",
         background: p.bg,

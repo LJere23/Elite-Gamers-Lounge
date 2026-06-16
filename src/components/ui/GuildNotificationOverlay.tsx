@@ -104,6 +104,10 @@ export default function GuildNotificationOverlay({ notifications, gamerTag, avat
         backgroundColor: null,
         scale: 4,  // 540×540 card × 4 = 2160×2160 high-res output
         logging: false,
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth: 540,
+        windowHeight: 540,
       });
 
       canvas.toBlob(async (blob) => {
