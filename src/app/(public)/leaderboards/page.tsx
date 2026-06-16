@@ -40,7 +40,7 @@ export default function LeaderboardsPage() {
           <div>
 
             <h1 className="text-4xl md:text-5xl font-black">
-              Gweru's Gamers Lounge
+              Elite Gamers Lounge
             </h1>
 
             <p className="text-zinc-600 text-lg mt-2">

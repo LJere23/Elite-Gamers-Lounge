@@ -6,6 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import AnimatedBackground from "@/components/ui/AnimatedBackground";
 import AvatarCropModal from "@/components/ui/AvatarCropModal";
+import GuildNotificationOverlay from "@/components/ui/GuildNotificationOverlay";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -68,6 +69,14 @@ interface TournamentEntry {
   wins: number;
   losses: number;
   tournament: Tournament;
+}
+
+interface GuildNotification {
+  id: string;
+  type: string;
+  heading: string;
+  message: string;
+  createdAt: string;
 }
 
 interface PortalData {
@@ -166,6 +175,10 @@ export default function GuildCardPage() {
   const [loading, setLoading] = useState(true);
   const [loggingOut, setLoggingOut] = useState(false);
 
+  // Notifications state
+  const [pendingNotifications, setPendingNotifications] = useState<GuildNotification[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+
   // Avatar state
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
@@ -206,6 +219,16 @@ export default function GuildCardPage() {
         setData(json);
         setAvatarUrl(json.player.avatarUrl);
         setDisplayName(json.player.name);
+
+        // Fetch unread notifications and fire the overlay
+        const notifRes = await fetch("/api/portal/notifications");
+        if (notifRes.ok) {
+          const notifs: GuildNotification[] = await notifRes.json();
+          if (notifs.length > 0) {
+            setPendingNotifications(notifs);
+            setShowNotifications(true);
+          }
+        }
       } catch {
         router.replace("/portal");
       } finally {
@@ -344,9 +367,20 @@ export default function GuildCardPage() {
 
         {/* ── Header ──────────────────────────────────────────────────────── */}
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-black text-yellow-400 tracking-tight">
-            Guild Card
-          </h1>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/"
+              className="text-purple-400/60 hover:text-purple-300 transition-colors"
+              title="Back to home"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 9.75L12 3l9 6.75V21a.75.75 0 01-.75.75H15.75a.75.75 0 01-.75-.75v-5.25H9V21a.75.75 0 01-.75.75H3.75A.75.75 0 013 21V9.75z" />
+              </svg>
+            </Link>
+            <h1 className="text-2xl font-black text-yellow-400 tracking-tight">
+              Guild Card
+            </h1>
+          </div>
           <button
             onClick={handleLogout}
             disabled={loggingOut}
@@ -519,6 +553,24 @@ export default function GuildCardPage() {
               <p className="text-xs text-purple-400/70 mt-1.5">{xpToNextRank} XP to next rank</p>
             )}
           </div>
+
+          {/* ── Return motivator ──────────────────────────────────────────── */}
+          {!isMaxRank && xpToNextRank <= 20 && (
+            <div className="mb-6 rounded-2xl border border-amber-400/40 bg-amber-900/20 px-4 py-3 flex items-center gap-3">
+              <span className="text-amber-400 text-xl shrink-0">🔥</span>
+              <p className="text-sm text-amber-300 font-semibold">
+                You are <span className="font-black text-amber-400">{xpToNextRank} XP</span> away from {nextRank}. One more visit could do it.
+              </p>
+            </div>
+          )}
+          {!isMaxRank && xpToNextRank > 20 && xpToNextRank <= 50 && (
+            <div className="mb-6 rounded-2xl border border-purple-500/30 bg-purple-900/20 px-4 py-3 flex items-center gap-3">
+              <span className="text-purple-300 text-xl shrink-0">⚔</span>
+              <p className="text-sm text-purple-300">
+                <span className="font-black text-white">{xpToNextRank} XP</span> to {nextRank}. Keep showing up — the rank is within reach.
+              </p>
+            </div>
+          )}
 
           {/* Stats Row */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
@@ -708,7 +760,7 @@ export default function GuildCardPage() {
               <p className="text-xl font-black text-yellow-400 group-hover:text-amber-300 transition-colors">
                 ⚔ Quest Board
               </p>
-              <p className="text-purple-300/60 text-xs mt-1">Complete quests to earn XP and rise through the ranks</p>
+              <p className="text-purple-300/60 text-xs mt-1">View active quests — staff will award your XP when you complete them at the lounge</p>
             </div>
             <span className="shrink-0 text-yellow-400/60 group-hover:text-yellow-400 text-2xl transition-colors">→</span>
           </div>
@@ -731,6 +783,22 @@ export default function GuildCardPage() {
           imageSrc={cropImageSrc}
           onSave={handleCropSave}
           onCancel={handleCropCancel}
+        />
+      )}
+
+      {/* Anime-style notification overlay */}
+      {showNotifications && pendingNotifications.length > 0 && (
+        <GuildNotificationOverlay
+          notifications={pendingNotifications}
+          gamerTag={player.gamerTag}
+          avatarUrl={avatarUrl}
+          playerTitle={player.titles?.[0]?.title ?? null}
+          xp={player.xp}
+          memberSince={player.joinedAt}
+          onDone={() => {
+            setShowNotifications(false);
+            fetch("/api/portal/notifications", { method: "POST" });
+          }}
         />
       )}
     </div>

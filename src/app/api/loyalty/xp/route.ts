@@ -88,11 +88,15 @@ export async function POST(req: NextRequest) {
       });
       await prisma.notification.create({
         data: {
-          message: `Rank up! ${player.name} is now ${newRank}`,
+          playerId,
+          type: "rank_up",
+          heading: "Rank Up!",
+          message: `You have ascended to ${newRank}. The lounge recognises your dedication.`,
           severity: "success",
         },
       });
     }
+
 
     return NextResponse.json({
       player: updatedPlayer,

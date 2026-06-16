@@ -18,7 +18,7 @@ interface CommunityData {
 const DEFAULTS: CommunityData = {
   communityHeadline: "Join Our Gaming Community",
   communityBody:
-    "Gweru's Gamers Lounge is more than a gaming venue — it's a community of competitive players, casual gamers, and esports enthusiasts all under one roof.",
+    "Elite Gamers Lounge is more than a gaming venue — it's a community of competitive players, casual gamers, and esports enthusiasts all under one roof.",
   communityStat1Label: "Members",
   communityStat1Value: "200+",
   communityStat2Label: "Tournaments",

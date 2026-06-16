@@ -7,7 +7,7 @@ import { fadeIn } from "@/animations/fade";
 import AnimatedBackground from "@/components/ui/AnimatedBackground";
 
 const WA_NUMBER = "263784497531";
-const WA_BOOK = `https://wa.me/${WA_NUMBER}?text=Hi%2C+I%27d+like+to+book+a+gaming+session+at+Gweru%27s+Gamers+Lounge.`;
+const WA_BOOK = `https://wa.me/${WA_NUMBER}?text=Hi%2C+I%27d+like+to+book+a+gaming+session+at+Elite+Gamers+Lounge.`;
 
 export default function Hero() {
   return (

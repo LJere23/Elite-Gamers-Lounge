@@ -33,6 +33,7 @@ model Player {
   xpLedger       XpLedger[]
   jobCompletions JobCompletion[]
   entries        TournamentEntry[]
+  notifications  Notification[]
 }
 
 model PlayerTitle {
@@ -210,9 +211,15 @@ model Announcement {
 
 model Notification {
   id        String   @id @default(uuid())
+  playerId  String?
+  type      String   @default("info") // "rank_up" | "title" | "quest" | "xp"
+  heading   String   @default("Notification")
   message   String
+  read      Boolean  @default(false)
   severity  String   @default("info")
   createdAt DateTime @default(now())
+
+  player Player? @relation(fields: [playerId], references: [id], onDelete: Cascade)
 }
 
 model LoungeSettings {

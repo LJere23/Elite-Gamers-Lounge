@@ -2,7 +2,7 @@ import "./globals.css";
 
 export const metadata = {
   title: "Elite Gamers Lounge",
-  description: "The ultimate gaming lounge in Gweru",
+  description: "Elite Gamers Lounge — Level up, connect, and conquer.",
 };
 
 export const viewport = {

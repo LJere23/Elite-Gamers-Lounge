@@ -22,7 +22,7 @@ export default function BookingsPage() {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const msg = [
-      `*Booking Request — Gweru's Gamers Lounge*`,
+      `*Booking Request — Elite Gamers Lounge*`,
       `Name: ${form.name}`,
       `Email: ${form.email}`,
       `Date/Time: ${form.dateTime}`,

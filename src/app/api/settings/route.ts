@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 
 const defaults = {
   id: "singleton",
-  name: "Gweru's Gamers Lounge",
+  name: "Elite Gamers Lounge",
   tagline: "Gweru's Premier Gaming Experience",
   contactEmail: "",
   contactPhone: "",
@@ -17,7 +17,7 @@ const defaults = {
   adminPassword: "admin123",
   communityHeadline: "Join Our Gaming Community",
   communityBody:
-    "Gweru's Gamers Lounge is more than a gaming venue — it's a community of competitive players, casual gamers, and esports enthusiasts all under one roof.",
+    "Elite Gamers Lounge is more than a gaming venue — it's a community of competitive players, casual gamers, and esports enthusiasts all under one roof.",
   communityStat1Label: "Members",
   communityStat1Value: "200+",
   communityStat2Label: "Tournaments",

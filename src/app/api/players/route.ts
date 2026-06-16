@@ -99,6 +99,15 @@ export async function POST(request: NextRequest) {
         title: "Otherworlder",
       },
     });
+    await prisma.notification.create({
+      data: {
+        playerId: newPlayer.id,
+        type: "title",
+        heading: "Title Bestowed",
+        message: `You have been granted the title "Otherworlder". A traveller from beyond Gweru — your presence is noted.`,
+        severity: "success",
+      },
+    });
   }
 
   const serialized = {

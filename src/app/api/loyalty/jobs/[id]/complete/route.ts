@@ -73,12 +73,29 @@ export async function POST(
     const newRank = updatedPlayer.rank;
     const rankUp = newRank !== player.rank;
 
+    // Quest complete notification — always fires
+    await prisma.notification.create({
+      data: {
+        playerId,
+        type: "quest",
+        heading: "Quest Complete",
+        message: `You completed "${job.name}" and earned ${finalAmount} XP. Well done, adventurer.`,
+        severity: "success",
+      },
+    });
+
     if (rankUp) {
       await prisma.announcement.create({
         data: { message: `${player.name} (${player.gamerTag}) ranked up to ${newRank}! 🎉`, type: "rank_up" },
       });
       await prisma.notification.create({
-        data: { message: `Rank up! ${player.name} is now ${newRank}`, severity: "success" },
+        data: {
+          playerId,
+          type: "rank_up",
+          heading: "Rank Up!",
+          message: `You have ascended to ${newRank}. The lounge recognises your dedication.`,
+          severity: "success",
+        },
       });
     }
 

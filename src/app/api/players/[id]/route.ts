@@ -99,6 +99,15 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
       await prisma.playerTitle.create({
         data: { playerId: id, title: "Otherworlder", awardedAt: new Date() },
       });
+      await prisma.notification.create({
+        data: {
+          playerId: id,
+          type: "title",
+          heading: "Title Bestowed",
+          message: `You have been granted the title "Otherworlder". A traveller from beyond Gweru — your presence is noted.`,
+          severity: "success",
+        },
+      });
     } else if (isGweru && existingTitle) {
       await prisma.playerTitle.delete({ where: { id: existingTitle.id } });
     }

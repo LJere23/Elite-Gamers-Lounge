@@ -15,7 +15,7 @@ export default async function ContactPage() {
   const closingTime = settings?.closingTime || "22:00";
   const whatsappNumber = settings?.whatsappNumber || "263784497531";
   const waLink = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
-    "Hi! I'd like to know more about Gweru's Gamers Lounge."
+    "Hi! I'd like to know more about Elite Gamers Lounge."
   )}`;
 
   return (

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Guild Portal — Gweru's Gamers Lounge",
+  title: "Guild Portal — Elite Gamers Lounge",
   description: "Access your Guild Card, track your XP, and view your rank progression.",
 };
 

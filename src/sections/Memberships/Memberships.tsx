@@ -8,7 +8,7 @@ const WA_NUMBER = "263784497531";
 
 function waLink(planName: string): string {
   const msg = encodeURIComponent(
-    `Hi, I'd like to sign up for the ${planName} membership at Gweru's Gamers Lounge.`
+    `Hi, I'd like to sign up for the ${planName} membership at Elite Gamers Lounge.`
   );
   return `https://wa.me/${WA_NUMBER}?text=${msg}`;
 }

@@ -79,6 +79,9 @@ export default function AdminLoyaltyPage() {
 
   /* ---- Award XP ---- */
   const [players, setPlayers] = useState<Player[]>([]);
+  const [playerSearch, setPlayerSearch] = useState("");
+  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [awardForm, setAwardForm] = useState({
     playerId: "",
     amount: 1,
@@ -155,6 +158,10 @@ export default function AdminLoyaltyPage() {
 
   async function handleAwardXp(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!awardForm.playerId) {
+      setAwardError("Please select a player first.");
+      return;
+    }
     setAwardLoading(true);
     setAwardResult(null);
     setAwardError(null);
@@ -181,6 +188,8 @@ export default function AdminLoyaltyPage() {
           `Awarded ${data.xpAwarded} XP to ${playerName}. New rank: ${data.newRank}${data.rankUp ? " — Rank Up!" : ""}`
         );
         setAwardForm({ playerId: "", amount: 1, source: "visit", note: "" });
+        setSelectedPlayer(null);
+        setPlayerSearch("");
         await loadLeaderboard();
       }
     } catch {
@@ -396,22 +405,74 @@ export default function AdminLoyaltyPage() {
             </p>
 
             <form className="mt-8 space-y-5" onSubmit={handleAwardXp}>
-              <label className="block text-sm font-semibold text-slate-100">
+              <div className="block text-sm font-semibold text-slate-100">
                 Player
-                <select
-                  required
-                  value={awardForm.playerId}
-                  onChange={(e) => setAwardForm({ ...awardForm, playerId: e.target.value })}
-                  className="mt-3 w-full rounded-3xl border border-white/10 bg-black/40 px-4 py-3 text-white outline-none focus:border-cyan-400"
-                >
-                  <option value="">Select a player...</option>
-                  {players.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name} (@{p.gamerTag})
-                    </option>
-                  ))}
-                </select>
-              </label>
+                <div className="relative mt-3">
+                  {selectedPlayer ? (
+                    <div className="flex items-center justify-between rounded-3xl border border-cyan-400/50 bg-black/40 px-4 py-3">
+                      <span className="text-white">
+                        {selectedPlayer.name}{" "}
+                        <span className="text-slate-400">@{selectedPlayer.gamerTag}</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedPlayer(null);
+                          setAwardForm({ ...awardForm, playerId: "" });
+                          setPlayerSearch("");
+                        }}
+                        className="text-slate-500 hover:text-red-400 transition-colors text-lg leading-none ml-3"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <input
+                        type="text"
+                        placeholder="Search by name or gamerTag..."
+                        value={playerSearch}
+                        onChange={(e) => { setPlayerSearch(e.target.value); setSearchOpen(true); }}
+                        onFocus={() => setSearchOpen(true)}
+                        onBlur={() => setTimeout(() => setSearchOpen(false), 150)}
+                        className="w-full rounded-3xl border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 outline-none focus:border-cyan-400"
+                      />
+                      {searchOpen && playerSearch.length > 0 && (
+                        <div className="absolute z-10 mt-2 w-full rounded-2xl border border-white/10 bg-zinc-900 shadow-2xl overflow-hidden">
+                          {players
+                            .filter((p) => {
+                              const q = playerSearch.toLowerCase();
+                              return p.name.toLowerCase().includes(q) || p.gamerTag.toLowerCase().includes(q);
+                            })
+                            .slice(0, 8)
+                            .map((p) => (
+                              <button
+                                key={p.id}
+                                type="button"
+                                onMouseDown={() => {
+                                  setSelectedPlayer(p);
+                                  setAwardForm({ ...awardForm, playerId: p.id });
+                                  setPlayerSearch("");
+                                  setSearchOpen(false);
+                                }}
+                                className="w-full px-4 py-3 text-left hover:bg-white/5 transition-colors border-b border-white/5 last:border-0"
+                              >
+                                <span className="text-white font-semibold">{p.name}</span>
+                                <span className="text-slate-400 text-sm ml-2">@{p.gamerTag}</span>
+                              </button>
+                            ))}
+                          {players.filter((p) => {
+                            const q = playerSearch.toLowerCase();
+                            return p.name.toLowerCase().includes(q) || p.gamerTag.toLowerCase().includes(q);
+                          }).length === 0 && (
+                            <p className="px-4 py-3 text-slate-500 text-sm">No players found.</p>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
 
               <div className="grid gap-5 sm:grid-cols-2">
                 <label className="block text-sm font-semibold text-slate-100">

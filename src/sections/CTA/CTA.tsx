@@ -1,7 +1,7 @@
 "use client";
 
 const WA_NUMBER = "263784497531";
-const WA_RESERVE = `https://wa.me/${WA_NUMBER}?text=Hi%2C+I%27d+like+to+reserve+a+spot+at+Gweru%27s+Gamers+Lounge.`;
+const WA_RESERVE = `https://wa.me/${WA_NUMBER}?text=Hi%2C+I%27d+like+to+reserve+a+spot+at+Elite+Gamers+Lounge.`;
 
 export default function CTA() {
   return (
@@ -17,7 +17,7 @@ export default function CTA() {
         </h2>
 
         <p className="text-gray-300 text-lg mb-8">
-          Reserve your setup and become part of Gweru's
+          Reserve your setup and become part of the
           fastest-growing gaming community.
         </p>
 
