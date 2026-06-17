@@ -1,28 +1,45 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
+import { AnnouncementShareCard } from "@/components/ui/AnnouncementShareCard";
 import { Announcement } from "@/types/admin";
+import html2canvas from "html2canvas";
 
 const TYPE_BADGE: Record<string, string> = {
-  champion: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
-  rank_up:  "bg-purple-500/20 text-purple-300 border-purple-500/30",
-  general:  "bg-cyan-500/20 text-cyan-300 border-cyan-500/30",
+  champion:             "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
+  rank_up:              "bg-purple-500/20 text-purple-300 border-purple-500/30",
+  birthday:             "bg-pink-500/20 text-pink-300 border-pink-500/30",
+  milestone:            "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
+  tournament_scheduled: "bg-amber-500/20 text-amber-300 border-amber-500/30",
+  tournament_started:   "bg-orange-500/20 text-orange-300 border-orange-500/30",
+  weekly_leaderboard:   "bg-cyan-500/20 text-cyan-300 border-cyan-500/30",
+  general:              "bg-cyan-500/20 text-cyan-300 border-cyan-500/30",
 };
 
 const TYPE_LABEL: Record<string, string> = {
-  champion: "🏆 Champion",
-  rank_up:  "⬆ Rank Up",
-  general:  "📢 General",
+  champion:             "🏆 Champion",
+  rank_up:              "⬆ Rank Up",
+  birthday:             "🎂 Birthday",
+  milestone:            "⚔ Milestone",
+  tournament_scheduled: "📅 Tournament",
+  tournament_started:   "⚡ Live",
+  weekly_leaderboard:   "📊 Leaderboard",
+  general:              "📢 General",
 };
 
 export default function AdminAnnouncementsPage() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
-  const [expiryDays, setExpiryDays] = useState("");
-  const [formMsg, setFormMsg] = useState<string | null>(null);
-  const [showAll, setShowAll] = useState(false);
+  const [loading, setLoading]             = useState(false);
+  const [message, setMessage]             = useState("");
+  const [expiryDays, setExpiryDays]       = useState("");
+  const [formMsg, setFormMsg]             = useState<string | null>(null);
+  const [showAll, setShowAll]             = useState(false);
+  const [shareCard, setShareCard]         = useState<Announcement | null>(null);
+  const [capturing, setCapturing]         = useState(false);
+  const [copyDone, setCopyDone]           = useState(false);
+
+  const captureRef = useRef<HTMLDivElement>(null);
 
   async function load() {
     const res = await fetch("/api/announcements/all");
@@ -44,8 +61,8 @@ export default function AdminAnnouncementsPage() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        message: message.trim(),
-        type: "general",
+        message:      message.trim(),
+        type:         "general",
         expiresInDays: expiryDays ? Number(expiryDays) : undefined,
       }),
     });
@@ -81,6 +98,33 @@ export default function AdminAnnouncementsPage() {
     setLoading(false);
   };
 
+  const handleDownloadCard = async () => {
+    if (!captureRef.current || capturing) return;
+    setCapturing(true);
+    try {
+      const canvas = await html2canvas(captureRef.current, {
+        scale: 4,
+        useCORS: true,
+        backgroundColor: null,
+        logging: false,
+      });
+      const link = document.createElement("a");
+      link.download = `ggl-announcement-${shareCard?.id?.slice(0, 8) ?? "card"}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    } finally {
+      setCapturing(false);
+    }
+  };
+
+  const handleCopyText = () => {
+    if (!shareCard) return;
+    navigator.clipboard.writeText(shareCard.message).then(() => {
+      setCopyDone(true);
+      setTimeout(() => setCopyDone(false), 2000);
+    });
+  };
+
   const expiredCount = announcements.filter(
     (a) => a.expiresAt && new Date(a.expiresAt) <= new Date()
   ).length;
@@ -89,7 +133,7 @@ export default function AdminAnnouncementsPage() {
     <section className="space-y-8">
       <AdminPageHeader
         title="Announcements"
-        description="Publish updates visible on the public homepage. Tournament champion announcements are created automatically."
+        description="Publish updates visible on the public homepage. Most announcements are created automatically."
       />
 
       <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
@@ -146,7 +190,7 @@ export default function AdminAnnouncementsPage() {
                           <span className="text-xs text-slate-400">{a.tournamentName}</span>
                         )}
                       </div>
-                      <p className="text-slate-200 text-sm leading-relaxed">{a.message}</p>
+                      <p className="text-slate-200 text-sm leading-relaxed whitespace-pre-line">{a.message}</p>
                       <div className="mt-2 flex flex-wrap gap-3 text-xs text-slate-500">
                         <span>{new Date(a.createdAt).toLocaleDateString()}</span>
                         {a.expiresAt && (
@@ -155,16 +199,25 @@ export default function AdminAnnouncementsPage() {
                           </span>
                         )}
                         {a.winnerName && <span className="text-yellow-400">Winner: {a.winnerName}</span>}
-                        {a.prizeAmount && <span className="text-green-400">${a.prizeAmount}</span>}
+                        {a.prizeAmount && <span className="text-green-400">{a.prizeAmount}</span>}
                       </div>
                     </div>
-                    <button
-                      onClick={() => handleDelete(a.id)}
-                      disabled={loading}
-                      className="shrink-0 text-xs text-red-400 hover:text-red-300 transition pt-1"
-                    >
-                      Delete
-                    </button>
+                    <div className="shrink-0 flex flex-col gap-2 pt-1">
+                      <button
+                        onClick={() => setShareCard(a)}
+                        title="Create share card"
+                        className="text-xs text-cyan-400 hover:text-cyan-300 transition font-semibold"
+                      >
+                        Share ↗
+                      </button>
+                      <button
+                        onClick={() => handleDelete(a.id)}
+                        disabled={loading}
+                        className="text-xs text-red-400 hover:text-red-300 transition"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
                 </div>
               );
@@ -178,7 +231,7 @@ export default function AdminAnnouncementsPage() {
             <p className="text-xs uppercase tracking-[0.24em] text-cyan-400">Publish Announcement</p>
             <h2 className="mt-2 text-2xl font-black text-white">New update</h2>
             <p className="mt-2 text-sm text-slate-400">
-              Tournament champion and rank-up announcements are created automatically when you complete tournaments or award XP.
+              Most announcements — tournaments, birthdays, milestones, weekly leaderboard — are auto-created.
             </p>
           </div>
 
@@ -225,13 +278,79 @@ export default function AdminAnnouncementsPage() {
 
           <div className="rounded-3xl border border-white/5 bg-black/30 p-4 space-y-2">
             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Auto-created types</p>
-            <div className="space-y-2 text-xs text-slate-500">
-              <p>🏆 <span className="text-yellow-300 font-semibold">Champion</span> — when a tournament completes</p>
-              <p>⬆ <span className="text-purple-300 font-semibold">Rank Up</span> — when a player earns a new rank</p>
+            <div className="space-y-1 text-xs text-slate-500">
+              <p>🏆 <span className="text-yellow-300 font-semibold">Champion</span> — tournament completes</p>
+              <p>📅 <span className="text-amber-300 font-semibold">Tournament</span> — scheduled & started</p>
+              <p>⬆ <span className="text-purple-300 font-semibold">Rank Up</span> — player earns new rank</p>
+              <p>⚔ <span className="text-emerald-300 font-semibold">Milestone</span> — 10 / 25 / 50 / 100 visits</p>
+              <p>🎂 <span className="text-pink-300 font-semibold">Birthday</span> — daily cron</p>
+              <p>📊 <span className="text-cyan-300 font-semibold">Leaderboard</span> — every Monday</p>
             </div>
           </div>
         </div>
       </div>
+
+      {/* SHARE CARD MODAL */}
+      {shareCard && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+          onClick={(e) => { if (e.target === e.currentTarget) setShareCard(null); }}
+        >
+          <div className="bg-zinc-950 border border-white/10 rounded-[2rem] p-6 w-full max-w-xl space-y-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.24em] text-cyan-400">Share Card</p>
+                <h3 className="mt-1 text-lg font-black text-white">Download or copy for socials</h3>
+              </div>
+              <button
+                onClick={() => setShareCard(null)}
+                className="text-slate-400 hover:text-white text-xl leading-none"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Preview box — scaled down visually (separate from capture ref) */}
+            <div className="flex justify-center">
+              <div
+                style={{ width: 270, height: 270, overflow: "hidden", borderRadius: 16, position: "relative" }}
+                className="border border-white/10"
+              >
+                <div style={{ transform: "scale(0.5)", transformOrigin: "top left" }}>
+                  <AnnouncementShareCard announcement={shareCard} />
+                </div>
+              </div>
+            </div>
+
+            <div className="text-xs text-slate-500 text-center">
+              Card will be exported at 2160×2160 (4× retina). Ideal for WhatsApp and Instagram.
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={handleDownloadCard}
+                disabled={capturing}
+                className="flex-1 rounded-3xl bg-cyan-500 px-5 py-3 text-sm font-bold uppercase tracking-[0.12em] text-black hover:bg-cyan-400 transition disabled:opacity-60"
+              >
+                {capturing ? "Generating…" : "⬇ Download PNG"}
+              </button>
+              <button
+                onClick={handleCopyText}
+                className="flex-1 rounded-3xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold text-slate-200 hover:bg-white/10 transition"
+              >
+                {copyDone ? "✓ Copied!" : "Copy text"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Offscreen capture target — positioned off-screen so html2canvas can read it */}
+      {shareCard && (
+        <div style={{ position: "fixed", top: -1200, left: 0, pointerEvents: "none" }}>
+          <AnnouncementShareCard ref={captureRef} announcement={shareCard} />
+        </div>
+      )}
     </section>
   );
 }

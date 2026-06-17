@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { tryAwardJob } from "@/lib/jobs";
+import { awardVisitXP } from "@/lib/visitXP";
 import { requireAdmin } from "@/lib/adminAuth";
 import {
   getTierRule,
@@ -99,19 +100,23 @@ export async function POST(request: NextRequest) {
   // Racing sims are priced per race (device.hourlyRate = price per race), not per hour
   let totalPrice = racingSim ? device.hourlyRate : durationHours * device.hourlyRate;
   let playerForSession: Awaited<ReturnType<typeof prisma.player.findUnique>> | null = null;
+  let isSessionNewDay = false;
 
   if (playerGamerTag) {
     playerForSession = await prisma.player.findUnique({ where: { gamerTag: playerGamerTag } });
   }
 
   if (playerForSession) {
+    // Track new-day flag at outer scope for visit XP (must be read before any player updates)
+    isSessionNewDay = playerForSession.lastSessionDate !== todayStr;
+
     const rule = getTierRule(playerForSession.membershipTier);
     const membershipActive = !playerForSession.membershipExpiresAt || playerForSession.membershipExpiresAt > now;
 
     if (membershipActive && rule.periodType) {
       const periodExpired = !playerForSession.currentPeriodEnd || playerForSession.currentPeriodEnd < now;
       const perksMonthExpired = !playerForSession.perksMonthEnd || playerForSession.perksMonthEnd < now;
-      const isNewDay = playerForSession.lastSessionDate !== todayStr;
+      const isNewDay = isSessionNewDay;
 
       if (racingSim) {
         // Racing sim: per-race pricing
@@ -215,6 +220,9 @@ export async function POST(request: NextRequest) {
   });
 
   if (playerForSession) {
+    // Award visit XP + increment visitCount (always) and daily XP bonus (once per day)
+    await awardVisitXP(playerForSession.id, isSessionNewDay, todayStr);
+
     const sessionCount = await prisma.session.count({ where: { playerGamerTag } });
     if (sessionCount === 1) {
       await tryAwardJob({ jobType: "milestone_first_session", playerId: playerForSession.id });
