@@ -12,6 +12,9 @@ const inputClass =
 
 // ── Login form ────────────────────────────────────────────────────────────────
 
+const SESSION_KEY = "guild_session";
+const SESSION_TTL = 2 * 60 * 60 * 1000; // 2 hours
+
 function PortalLoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -21,11 +24,37 @@ function PortalLoginForm() {
   const [loading, setLoading] = useState(false);
   const [redirectTo, setRedirectTo] = useState<string | null>(null);
   const [showForgot, setShowForgot] = useState(false);
+  const [checking, setChecking] = useState(true);
 
   useEffect(() => {
     const redirect = searchParams.get("redirect");
     if (redirect && redirect.startsWith("/")) setRedirectTo(redirect);
   }, [searchParams]);
+
+  // Auto-redirect if the user authenticated within the last 2 hours
+  useEffect(() => {
+    async function tryAutoRedirect() {
+      try {
+        const raw = localStorage.getItem(SESSION_KEY);
+        if (raw) {
+          const { gamerTag, authedAt } = JSON.parse(raw);
+          if (gamerTag && Date.now() - authedAt < SESSION_TTL) {
+            const res = await fetch("/api/portal/me");
+            if (res.ok) {
+              const data = await res.json();
+              router.replace(redirectTo ?? `/portal/${data.player.gamerTag}`);
+              return;
+            }
+            // Cookie expired — clear stale localStorage entry
+            localStorage.removeItem(SESSION_KEY);
+          }
+        }
+      } catch {}
+      setChecking(false);
+    }
+    tryAutoRedirect();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -41,6 +70,9 @@ function PortalLoginForm() {
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || "Login failed. Please try again."); return; }
+      try {
+        localStorage.setItem(SESSION_KEY, JSON.stringify({ gamerTag: data.player.gamerTag, authedAt: Date.now() }));
+      } catch {}
       router.push(redirectTo ?? `/portal/${data.player.gamerTag}`);
     } catch {
       setError("Something went wrong. Please try again.");
@@ -48,6 +80,8 @@ function PortalLoginForm() {
       setLoading(false);
     }
   }
+
+  if (checking) return null;
 
   if (showForgot) {
     return <ForgotPinForm onBack={() => setShowForgot(false)} />;

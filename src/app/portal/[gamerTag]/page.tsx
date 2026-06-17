@@ -203,6 +203,7 @@ export default function GuildCardPage() {
       try {
         const res = await fetch("/api/portal/me");
         if (res.status === 401) {
+          try { localStorage.removeItem("guild_session"); } catch {}
           router.replace("/portal");
           return;
         }
@@ -240,6 +241,7 @@ export default function GuildCardPage() {
 
   async function handleLogout() {
     setLoggingOut(true);
+    try { localStorage.removeItem("guild_session"); } catch {}
     try {
       await fetch("/api/portal/me", { method: "POST" });
     } finally {
