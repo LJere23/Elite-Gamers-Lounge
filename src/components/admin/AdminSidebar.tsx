@@ -20,6 +20,7 @@ const links = [
   { label: "Testimonials", href: "/admin/testimonials", icon: MessageSquareQuote },
   { label: "Settings",     href: "/admin/settings",     icon: Settings },
   { label: "Devices",      href: "/admin/devices",      icon: Cpu },
+  { label: "Games",        href: "/admin/games",        icon: Gamepad2 },
 ];
 
 function NavLinks({ onNav }: { onNav?: () => void }) {

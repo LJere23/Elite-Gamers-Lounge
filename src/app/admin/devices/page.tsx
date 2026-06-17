@@ -14,8 +14,9 @@ export default function DevicesPage() {
     location: "Main Floor",
   });
 
-  // per-device game input state
+  // per-device game select state
   const [gameInputs, setGameInputs] = useState<Record<string, string>>({});
+  const [allGames, setAllGames] = useState<string[]>([]);
 
   async function loadDevices() {
     try {
@@ -26,7 +27,13 @@ export default function DevicesPage() {
     }
   }
 
-  useEffect(() => { loadDevices(); }, []);
+  useEffect(() => {
+    loadDevices();
+    fetch("/api/games")
+      .then((r) => r.json())
+      .then((data: { name: string }[]) => setAllGames(data.map((g) => g.name)))
+      .catch(() => {});
+  }, []);
 
   async function createDevice(e: React.FormEvent) {
     e.preventDefault();
@@ -189,22 +196,35 @@ export default function DevicesPage() {
                   </div>
                 )}
 
-                {/* Add game input */}
-                <div className="flex gap-2">
-                  <input
-                    placeholder="Add a game…"
-                    value={gameInputs[device.id] || ""}
-                    onChange={(e) => setGameInputs((prev) => ({ ...prev, [device.id]: e.target.value }))}
-                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addGame(device); } }}
-                    className="flex-1 bg-black border border-white/10 rounded-2xl px-3 py-2 text-sm text-white placeholder:text-zinc-600 outline-none focus:border-cyan-400"
-                  />
-                  <button
-                    onClick={() => addGame(device)}
-                    className="rounded-2xl bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 px-4 py-2 text-sm font-bold hover:bg-cyan-500/30 transition"
-                  >
-                    Add
-                  </button>
-                </div>
+                {/* Add game — dropdown from games library */}
+                {(() => {
+                  const available = allGames.filter((g) => !games.includes(g));
+                  return available.length > 0 ? (
+                    <div className="flex gap-2">
+                      <select
+                        value={gameInputs[device.id] || ""}
+                        onChange={(e) => setGameInputs((prev) => ({ ...prev, [device.id]: e.target.value }))}
+                        className="flex-1 bg-black border border-white/10 rounded-2xl px-3 py-2 text-sm text-white outline-none focus:border-cyan-400"
+                      >
+                        <option value="">Select a game…</option>
+                        {available.map((g) => (
+                          <option key={g} value={g}>{g}</option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={() => addGame(device)}
+                        className="rounded-2xl bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 px-4 py-2 text-sm font-bold hover:bg-cyan-500/30 transition"
+                      >
+                        Add
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-zinc-600 italic">
+                      All library games added.{" "}
+                      <a href="/admin/games" className="text-cyan-500 hover:underline">Manage library</a>
+                    </p>
+                  );
+                })()}
               </div>
 
               {/* Status + delete */}

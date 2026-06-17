@@ -66,7 +66,26 @@ const SEED_MEMBERSHIPS = [
   },
 ];
 
+const SEED_GAMES = [
+  "FC25",
+  "Tekken 8",
+  "Mortal Kombat",
+  "Gran Turismo",
+  "Call Of Duty",
+];
+
 async function main() {
+  console.log("Seeding games…");
+  for (const name of SEED_GAMES) {
+    const existing = await prisma.game.findUnique({ where: { name } });
+    if (existing) {
+      console.log(`  ⊘ Already exists: ${name}`);
+    } else {
+      await prisma.game.create({ data: { name } });
+      console.log(`  ✓ Created: ${name}`);
+    }
+  }
+
   console.log("Seeding jobs…");
 
   for (const job of SEED_JOBS) {

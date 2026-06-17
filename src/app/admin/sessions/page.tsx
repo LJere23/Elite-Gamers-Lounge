@@ -22,17 +22,16 @@ interface MemberOption {
   gamerTag: string;
 }
 
-const DEFAULT_GAMES = ["FC25", "Tekken 8", "Mortal Kombat", "Gran Turismo", "Call Of Duty"];
-
 export default function SessionsPage() {
   const [devices,       setDevices]       = useState<Device[]>([]);
   const [sessions,      setSessions]      = useState<Session[]>([]);
   const [members,       setMembers]       = useState<MemberOption[]>([]);
+  const [allGames,      setAllGames]      = useState<string[]>([]);
   const [loading,       setLoading]       = useState(false);
   const [notifications, setNotifications] = useState<{ id: string; type: "warning" | "ended"; message: string }[]>([]);
 
-  // Form state
-  const [form, setForm] = useState({ game: DEFAULT_GAMES[0], deviceId: "", hours: 1 });
+  // Form state — game initialises to "" until games load
+  const [form, setForm] = useState({ game: "", deviceId: "", hours: 1 });
 
   // Member search state
   const [memberSearch,     setMemberSearch]     = useState("");
@@ -75,10 +74,21 @@ export default function SessionsPage() {
     } catch {}
   }
 
+  async function loadGames() {
+    try {
+      const res  = await fetch("/api/games");
+      const data = await res.json() as { name: string }[];
+      const names = data.map((g) => g.name);
+      setAllGames(names);
+      setForm((prev) => ({ ...prev, game: prev.game || names[0] || "" }));
+    } catch {}
+  }
+
   useEffect(() => {
     loadDevices();
     loadSessions();
     loadMembers();
+    loadGames();
   }, []);
 
   // Auto-refresh + auto-end
@@ -113,11 +123,11 @@ export default function SessionsPage() {
     [devices]
   );
 
-  // Games for the selected device (fall back to defaults)
+  // Games for the selected device (fall back to the global library)
   const selectedDevice = devices.find((d) => d.id === form.deviceId);
   const gameOptions    = (selectedDevice?.supportedGames?.length ?? 0) > 0
     ? selectedDevice!.supportedGames
-    : DEFAULT_GAMES;
+    : allGames;
 
   // Filtered member search results
   const memberResults = useMemo(() => {
@@ -169,7 +179,7 @@ export default function SessionsPage() {
       if (created.error) { alert(created.error); return; }
       await loadSessions();
       await loadDevices();
-      setForm({ game: DEFAULT_GAMES[0], deviceId: "", hours: 1 });
+      setForm({ game: allGames[0] ?? "", deviceId: "", hours: 1 });
       clearPlayerSelection();
     } finally {
       setLoading(false);
@@ -337,7 +347,7 @@ export default function SessionsPage() {
           value={form.deviceId}
           onChange={(e) => {
             const newDeviceId = e.target.value;
-            setForm((prev) => ({ ...prev, deviceId: newDeviceId, game: DEFAULT_GAMES[0] }));
+            setForm((prev) => ({ ...prev, deviceId: newDeviceId, game: allGames[0] ?? "" }));
           }}
           className="bg-black border border-white/10 rounded-2xl px-4 py-3 text-white outline-none focus:border-cyan-400"
         >
