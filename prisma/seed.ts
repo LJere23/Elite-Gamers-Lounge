@@ -94,7 +94,7 @@ const SEED_TEMPLATES = [
     defaultGame: "Darts",
     category: "other",
     format: "points_league",
-    scoringSystem: "best_of_1",
+    scoringSystem: "best_of_3",  // best of 3 legs (501) per match
     maxPlayers: 8,
     walkInFee: 0.50,
     warriorFreeEntriesPerMonth: 0, warriorDiscountPercent: 0,
@@ -119,10 +119,10 @@ const SEED_TEMPLATES = [
   },
   {
     templateName: "Racing Sim League",
-    defaultGame: "Gran Turismo",
+    defaultGame: "F1 24",          // staff overrides per event (Forza, F1, GT, etc.)
     category: "racing_sim_league",
     format: "fastest_lap",
-    scoringSystem: "best_of_1",
+    scoringSystem: "lap_time",     // ranked by fastest single lap — not match-based
     maxPlayers: 6,
     walkInFee: 5.00,
     warriorFreeEntriesPerMonth: 0, warriorDiscountPercent: 0,
@@ -130,6 +130,7 @@ const SEED_TEMPLATES = [
     legendFreeEntriesPerMonth: 1,  legendDiscountPercent: 0,
     xpReward: 3,
     prizeDescription: "Winner: $10 cash + leaderboard feature",
+    circuit: "TBD",                // staff sets circuit per event
   },
   {
     templateName: "Chess League",
@@ -216,7 +217,8 @@ async function main() {
   for (const tpl of SEED_TEMPLATES) {
     const existing = await prisma.tournamentTemplate.findFirst({ where: { templateName: tpl.templateName } });
     if (existing) {
-      console.log(`  ⊘ Already exists: ${tpl.templateName}`);
+      await prisma.tournamentTemplate.update({ where: { id: existing.id }, data: tpl });
+      console.log(`  ↻ Updated: ${tpl.templateName}`);
     } else {
       await prisma.tournamentTemplate.create({ data: tpl });
       console.log(`  ✓ Created: ${tpl.templateName}`);

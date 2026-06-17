@@ -186,6 +186,8 @@ model Tournament {
   prizeUsd         Float     @default(0)
   prizeDescription String    @default("")
   scoringSystem    String    @default("best_of_1")
+  circuit          String?   // Racing Sim League: the circuit being timed
+  xpReward         Int       @default(3) // XP awarded to player on entry
   currentRound     Int?
   winnerId         String?
   winnerName       String?
@@ -329,6 +331,7 @@ model TournamentTemplate {
   scoringSystem String  @default("best_of_1")
   maxPlayers   Int      @default(8)
   walkInFee    Float    @default(0)
+  circuit      String?  // e.g. "Spa-Francorchamps" — relevant for Racing Sim League
 
   // Tier pricing — stored as "free entries per month + discount after free"
   // -1 = unlimited free entries (e.g. Legend in Friday Mini, Hero/Legend in Chess)

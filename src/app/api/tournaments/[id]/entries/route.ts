@@ -100,6 +100,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
       jobType: "tournament_entry",
       playerId: player.id,
       contextId: tournamentId,
+      xpOverride: tournament.xpReward > 0 ? tournament.xpReward : undefined,
     });
 
     return NextResponse.json(

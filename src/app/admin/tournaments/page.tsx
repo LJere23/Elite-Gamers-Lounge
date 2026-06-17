@@ -16,6 +16,7 @@ interface TournamentTemplate {
   scoringSystem: string;
   maxPlayers: number;
   walkInFee: number;
+  circuit: string | null;
   warriorFreeEntriesPerMonth: number;
   warriorDiscountPercent: number;
   heroFreeEntriesPerMonth: number;
@@ -46,6 +47,7 @@ const BLANK_TEMPLATE: Omit<TournamentTemplate, "id" | "createdAt"> = {
   scoringSystem: "best_of_1",
   maxPlayers: 8,
   walkInFee: 0,
+  circuit: null,
   warriorFreeEntriesPerMonth: 0,
   warriorDiscountPercent: 0,
   heroFreeEntriesPerMonth: 0,
@@ -182,8 +184,19 @@ function TemplateForm({
             <option value="best_of_1">Best of 1</option>
             <option value="best_of_3">Best of 3</option>
             <option value="best_of_5">Best of 5</option>
+            <option value="lap_time">Lap Time (fastest wins)</option>
           </select>
         </div>
+      </div>
+
+      {/* Circuit — shown for any template, most relevant for Racing */}
+      <div>
+        <label className={LABEL}>Circuit / Venue (optional)</label>
+        <input className={INPUT} value={f.circuit ?? ""} onChange={(e) => set({ circuit: e.target.value || null })}
+          placeholder={f.category === "racing_sim_league" ? "e.g. Spa-Francorchamps, Silverstone" : "e.g. Board 1, Main Table"} />
+        {f.category === "racing_sim_league" && (
+          <p className="text-[10px] text-slate-500 mt-1">Staff sets the specific circuit per event — players line up and each does a timed lap, ranked by fastest time.</p>
+        )}
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
@@ -274,6 +287,7 @@ export default function AdminTournamentsPage() {
   const [fromTemplateGame, setFromTemplateGame] = useState("");
   const [fromTemplatePrize, setFromTemplatePrize] = useState("");
   const [fromTemplatePrizeUsd, setFromTemplatePrizeUsd] = useState(0);
+  const [fromTemplateCircuit, setFromTemplateCircuit] = useState("");
 
   // ── Templates ────────────────────────────────────────────────────────────────
   const [templates, setTemplates] = useState<TournamentTemplate[]>([]);
@@ -298,6 +312,7 @@ export default function AdminTournamentsPage() {
       setFromTemplateGame(tpl.defaultGame);
       setFromTemplatePrize(tpl.prizeDescription);
       setFromTemplatePrizeUsd(0);
+      setFromTemplateCircuit(tpl.circuit ?? "");
     }
   }
 
@@ -309,17 +324,19 @@ export default function AdminTournamentsPage() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        name: fromTemplateName.trim() || selectedTemplate.templateName,
-        game: fromTemplateGame.trim() || selectedTemplate.defaultGame,
-        category: selectedTemplate.category,
-        format: selectedTemplate.format,
-        scoringSystem: selectedTemplate.scoringSystem,
-        entries: selectedTemplate.maxPlayers,
-        entryFee: selectedTemplate.walkInFee,
-        prizeUsd: fromTemplatePrizeUsd,
+        name:            fromTemplateName.trim() || selectedTemplate.templateName,
+        game:            fromTemplateGame.trim()  || selectedTemplate.defaultGame,
+        category:        selectedTemplate.category,
+        format:          selectedTemplate.format,
+        scoringSystem:   selectedTemplate.scoringSystem,
+        entries:         selectedTemplate.maxPlayers,
+        entryFee:        selectedTemplate.walkInFee,
+        prizeUsd:        fromTemplatePrizeUsd,
         prizeDescription: fromTemplatePrize.trim() || selectedTemplate.prizeDescription,
-        startAt: fromTemplateStart,
-        endAt: fromTemplateEnd,
+        circuit:         fromTemplateCircuit.trim() || selectedTemplate.circuit || null,
+        xpReward:        selectedTemplate.xpReward,
+        startAt:         fromTemplateStart,
+        endAt:           fromTemplateEnd,
       }),
     });
     if (res.ok) {
@@ -332,6 +349,7 @@ export default function AdminTournamentsPage() {
       setFromTemplateGame("");
       setFromTemplatePrize("");
       setFromTemplatePrizeUsd(0);
+      setFromTemplateCircuit("");
     }
     setCreating(false);
   }
@@ -510,6 +528,9 @@ export default function AdminTournamentsPage() {
                       <p className="text-xs font-bold text-cyan-300">{selectedTemplate.format.replace(/_/g, " ")} · {selectedTemplate.maxPlayers} players · +{selectedTemplate.xpReward} XP</p>
                       <span className="text-xs text-slate-400">Walk-in ${selectedTemplate.walkInFee.toFixed(2)}</span>
                     </div>
+                    {selectedTemplate.scoringSystem === "lap_time" && (
+                      <p className="text-[10px] text-amber-400 font-semibold">⏱ Lap time ranking — players take turns, fastest time wins</p>
+                    )}
                     <div className="grid grid-cols-3 gap-1.5 text-center">
                       {[
                         ["Warrior", selectedTemplate.warriorFreeEntriesPerMonth, selectedTemplate.warriorDiscountPercent],
@@ -536,6 +557,20 @@ export default function AdminTournamentsPage() {
                   <input className={INPUT} value={fromTemplateGame} onChange={(e) => setFromTemplateGame(e.target.value)}
                     placeholder={selectedTemplate?.defaultGame ?? "Game"} />
                 </div>
+                {/* Circuit — always shown for racing, optional for others */}
+                {selectedTemplate && (
+                  <div>
+                    <label className={LABEL}>
+                      {selectedTemplate.category === "racing_sim_league" ? "Circuit *" : "Circuit / Venue (optional)"}
+                    </label>
+                    <input className={INPUT} value={fromTemplateCircuit} onChange={(e) => setFromTemplateCircuit(e.target.value)}
+                      placeholder={selectedTemplate.circuit ?? (selectedTemplate.category === "racing_sim_league" ? "e.g. Spa-Francorchamps" : "Optional")}
+                      required={selectedTemplate.category === "racing_sim_league"} />
+                    {selectedTemplate.category === "racing_sim_league" && (
+                      <p className="text-[10px] text-slate-500 mt-1">Players queue up and each does a timed lap — fastest lap wins.</p>
+                    )}
+                  </div>
+                )}
                 <div>
                   <label className={LABEL}>Prize description (optional override)</label>
                   <input className={INPUT} value={fromTemplatePrize} onChange={(e) => setFromTemplatePrize(e.target.value)}
@@ -602,6 +637,7 @@ export default function AdminTournamentsPage() {
                     <option value="best_of_1">Best of 1</option>
                     <option value="best_of_3">Best of 3</option>
                     <option value="best_of_5">Best of 5</option>
+                    <option value="lap_time">Lap Time (fastest wins)</option>
                   </select>
                 </div>
                 <div>

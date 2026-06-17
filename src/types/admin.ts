@@ -241,7 +241,8 @@ export type TournamentFormat =
 export type ScoringSystem =
   | "best_of_1"
   | "best_of_3"
-  | "best_of_5";
+  | "best_of_5"
+  | "lap_time";
 
 export interface Tournament {
   id: string;
@@ -253,9 +254,12 @@ export interface Tournament {
   startAt: string;
   endAt: string;
   entries: number;
+  entryFee: number;
   prizeUsd: number;
   prizeDescription: string;
   scoringSystem: ScoringSystem;
+  circuit?: string | null;
+  xpReward: number;
   currentRound?: number;
   prizeAmount?: string;
   winnerId?: string;

@@ -38,6 +38,7 @@ export async function POST(request: NextRequest) {
       legendDiscountPercent:     Number(body.legendDiscountPercent ?? 0),
       xpReward:                  Number(body.xpReward ?? 0),
       prizeDescription:          String(body.prizeDescription ?? "").trim(),
+      circuit:                   body.circuit ? String(body.circuit).trim() : null,
       isEnabled:                 body.isEnabled !== false,
     },
   });

@@ -25,6 +25,7 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
   if (body.legendDiscountPercent      !== undefined) data.legendDiscountPercent      = Number(body.legendDiscountPercent);
   if (body.xpReward        !== undefined) data.xpReward        = Number(body.xpReward);
   if (body.prizeDescription !== undefined) data.prizeDescription = String(body.prizeDescription).trim();
+  if (body.circuit         !== undefined) data.circuit          = body.circuit ? String(body.circuit).trim() : null;
   if (body.isEnabled        !== undefined) data.isEnabled        = Boolean(body.isEnabled);
 
   const updated = await prisma.tournamentTemplate.update({ where: { id }, data });

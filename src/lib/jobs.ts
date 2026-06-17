@@ -36,10 +36,12 @@ export async function tryAwardJob({
   jobType,
   playerId,
   contextId,
+  xpOverride,
 }: {
   jobType: string;
   playerId: string;
   contextId?: string;
+  xpOverride?: number; // overrides the job's fixed XP (e.g. per-tournament reward)
 }): Promise<{ awarded: boolean; xpAwarded?: number }> {
   try {
     const job = await prisma.job.findFirst({ where: { jobType, active: true } });
@@ -57,7 +59,8 @@ export async function tryAwardJob({
     if (existing) return { awarded: false };
 
     const multiplier  = getXpMultiplier(player.membershipTier);
-    const finalAmount = Math.round(job.xpReward * multiplier);
+    const baseXp      = xpOverride !== undefined ? xpOverride : job.xpReward;
+    const finalAmount = Math.round(baseXp * multiplier);
 
     const { rankChanged, newRank } = await prisma.$transaction(async (tx) => {
       await tx.jobCompletion.create({

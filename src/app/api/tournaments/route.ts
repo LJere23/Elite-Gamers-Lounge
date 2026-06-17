@@ -12,9 +12,12 @@ function serializeTournament(t: {
   startAt: Date;
   endAt: Date;
   entries: number;
+  entryFee: number;
   prizeUsd: number;
   prizeDescription: string;
   scoringSystem: string;
+  circuit: string | null;
+  xpReward: number;
   currentRound: number | null;
   winnerId: string | null;
   winnerName: string | null;
@@ -47,18 +50,20 @@ export async function POST(request: NextRequest) {
 
   const tournament = await prisma.tournament.create({
     data: {
-      name: body.name,
-      game: body.game,
-      category: body.category,
-      format: body.format,
-      status: body.status || "scheduled",
-      startAt: new Date(body.startAt),
-      endAt: new Date(body.endAt),
-      entryFee: body.entryFee || 0,
-      prizeUsd: body.prizeUsd || 0,
+      name:            body.name,
+      game:            body.game,
+      category:        body.category,
+      format:          body.format,
+      status:          body.status || "scheduled",
+      startAt:         new Date(body.startAt),
+      endAt:           new Date(body.endAt),
+      entryFee:        body.entryFee  ?? 0,
+      prizeUsd:        body.prizeUsd  ?? 0,
       prizeDescription: body.prizeDescription || "",
-      scoringSystem: body.scoringSystem || "best_of_1",
-      entries: body.entries || 0,
+      scoringSystem:   body.scoringSystem || "best_of_1",
+      entries:         body.entries   ?? 0,
+      circuit:         body.circuit   ?? null,
+      xpReward:        body.xpReward  ?? 3,
     },
   });
 
