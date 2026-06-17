@@ -61,6 +61,14 @@ const CARD_THEME: Record<string, {
     label:     "RANK UP",
     icon:      "⬆",
   },
+  title_awarded: {
+    bg:        "linear-gradient(145deg,#180d00 0%,#2d1a00 45%,#0d0820 100%)",
+    accent:    "#fde68a",
+    accentRgb: "253,230,138",
+    border:    "#fde68a",
+    label:     "TITLE AWARDED",
+    icon:      "🎖",
+  },
   weekly_leaderboard: {
     bg:        "linear-gradient(145deg,#001a1a 0%,#002d30 45%,#000d15 100%)",
     accent:    "#22d3ee",
@@ -132,11 +140,24 @@ function parse(a: Announcement): ParsedCard {
   }
 
   if (t === "rank_up") {
-    const rankMatch   = msg.match(/ascended to (\S[\w ]+)/);
-    const gamerMatch  = msg.match(/@(\S+)/);
+    const rankMatch  = msg.match(/ranked up to ([^\n!]+)/);
+    const gamerMatch = msg.match(/@(\S+)/);
+    const rank       = rankMatch ? rankMatch[1].trim() : "New Rank";
     return {
-      headline: rankMatch ? rankMatch[1].replace(" at", "").trim() : "New Rank",
-      lines: [gamerMatch ? `@${gamerMatch[1]}` : "A Guild Member", "has ascended"],
+      headline: gamerMatch ? `@${gamerMatch[1]}` : "Guild Member",
+      lines:    ["Has Ranked Up!", rank],
+    };
+  }
+
+  if (t === "title_awarded") {
+    const titleMatch = msg.match(/"([^"]+)"/);
+    const gamerMatch = msg.match(/@(\S+)/);
+    return {
+      headline: titleMatch ? titleMatch[1] : "Title Awarded",
+      lines:    [
+        gamerMatch ? `@${gamerMatch[1]}` : "A Guild Member",
+        "has earned this title",
+      ],
     };
   }
 

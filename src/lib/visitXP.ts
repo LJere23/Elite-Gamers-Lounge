@@ -81,11 +81,20 @@ export async function awardVisitXP(playerId: string, isNewDay: boolean, todayStr
         },
       }).catch(() => {});
 
-      // Public announcement
+      // Public milestone announcement (visit count achievement)
       await prisma.announcement.create({
         data: {
           type: "milestone",
-          message: `⚔ @${player.gamerTag} just hit ${newVisitCount} visits at Gweru's Gamers Lounge and earned the title "${milestone.title}". Legends are made here.`,
+          message: `⚔ @${player.gamerTag} just hit ${newVisitCount} visits at Gweru's Gamers Lounge. Legends are made here.`,
+          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        },
+      }).catch(() => {});
+
+      // Separate title-awarded announcement (shareable card)
+      await prisma.announcement.create({
+        data: {
+          type: "title_awarded",
+          message: `🎖 @${player.gamerTag} has earned the title "${milestone.title}" at Gweru's Gamers Lounge!`,
           expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         },
       }).catch(() => {});
@@ -123,7 +132,7 @@ export async function awardVisitXP(playerId: string, isNewDay: boolean, todayStr
       await prisma.announcement.create({
         data: {
           type: "rank_up",
-          message: `⬆ @${player.gamerTag} has ascended to ${newRank} at Gweru's Gamers Lounge!`,
+          message: `⬆ @${player.gamerTag} has ranked up to ${newRank}!`,
           expiresAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
         },
       }).catch(() => {});

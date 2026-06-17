@@ -86,7 +86,7 @@ export async function tryAwardJob({
         await tx.player.update({ where: { id: playerId }, data: { rank: newRank } });
         await tx.announcement.create({
           data: {
-            message: `${player.name} (${player.gamerTag}) ranked up to ${newRank}! 🎉`,
+            message: `⬆ @${player.gamerTag} has ranked up to ${newRank}!`,
             type: "rank_up",
           },
         });

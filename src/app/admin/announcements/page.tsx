@@ -9,6 +9,7 @@ import html2canvas from "html2canvas";
 const TYPE_BADGE: Record<string, string> = {
   champion:             "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
   rank_up:              "bg-purple-500/20 text-purple-300 border-purple-500/30",
+  title_awarded:        "bg-yellow-500/20 text-yellow-200 border-yellow-500/30",
   birthday:             "bg-pink-500/20 text-pink-300 border-pink-500/30",
   milestone:            "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
   tournament_scheduled: "bg-amber-500/20 text-amber-300 border-amber-500/30",
@@ -20,6 +21,7 @@ const TYPE_BADGE: Record<string, string> = {
 const TYPE_LABEL: Record<string, string> = {
   champion:             "🏆 Champion",
   rank_up:              "⬆ Rank Up",
+  title_awarded:        "🎖 Title",
   birthday:             "🎂 Birthday",
   milestone:            "⚔ Milestone",
   tournament_scheduled: "📅 Tournament",
@@ -282,6 +284,7 @@ export default function AdminAnnouncementsPage() {
               <p>🏆 <span className="text-yellow-300 font-semibold">Champion</span> — tournament completes</p>
               <p>📅 <span className="text-amber-300 font-semibold">Tournament</span> — scheduled & started</p>
               <p>⬆ <span className="text-purple-300 font-semibold">Rank Up</span> — player earns new rank</p>
+              <p>🎖 <span className="text-yellow-200 font-semibold">Title</span> — title awarded at visit milestone</p>
               <p>⚔ <span className="text-emerald-300 font-semibold">Milestone</span> — 10 / 25 / 50 / 100 visits</p>
               <p>🎂 <span className="text-pink-300 font-semibold">Birthday</span> — daily cron</p>
               <p>📊 <span className="text-cyan-300 font-semibold">Leaderboard</span> — every Monday</p>
