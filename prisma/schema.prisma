@@ -320,6 +320,31 @@ model LoungeSettings {
   foundingSlotsRemaining Int @default(50)
 }
 
+model TournamentTemplate {
+  id           String   @id @default(uuid())
+  templateName String
+  defaultGame  String   @default("")
+  category     String   @default("other")
+  format       String   @default("knockout")
+  scoringSystem String  @default("best_of_1")
+  maxPlayers   Int      @default(8)
+  walkInFee    Float    @default(0)
+
+  // Tier pricing — stored as "free entries per month + discount after free"
+  // -1 = unlimited free entries (e.g. Legend in Friday Mini, Hero/Legend in Chess)
+  warriorFreeEntriesPerMonth Int   @default(0)
+  warriorDiscountPercent     Float @default(0)
+  heroFreeEntriesPerMonth    Int   @default(0)
+  heroDiscountPercent        Float @default(0)
+  legendFreeEntriesPerMonth  Int   @default(0)
+  legendDiscountPercent      Float @default(0)
+
+  xpReward         Int     @default(0)
+  prizeDescription String  @default("")
+  isEnabled        Boolean @default(true)
+  createdAt        DateTime @default(now())
+}
+
 model Testimonial {
   id        String @id @default(uuid())
   name      String

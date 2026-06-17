@@ -74,6 +74,107 @@ const SEED_GAMES = [
   "Call Of Duty",
 ];
 
+const SEED_TEMPLATES = [
+  {
+    templateName: "Friday Mini-Tourney",
+    defaultGame: "FIFA / Mortal Kombat",
+    category: "friday_mini",
+    format: "knockout",
+    scoringSystem: "best_of_1",
+    maxPlayers: 8,
+    walkInFee: 1.00,
+    warriorFreeEntriesPerMonth: 1, warriorDiscountPercent: 0,
+    heroFreeEntriesPerMonth: 1,    heroDiscountPercent: 50,
+    legendFreeEntriesPerMonth: -1, legendDiscountPercent: 0,
+    xpReward: 3,
+    prizeDescription: "$4 shop credit to winner",
+  },
+  {
+    templateName: "Darts League",
+    defaultGame: "Darts",
+    category: "other",
+    format: "points_league",
+    scoringSystem: "best_of_1",
+    maxPlayers: 8,
+    walkInFee: 0.50,
+    warriorFreeEntriesPerMonth: 0, warriorDiscountPercent: 0,
+    heroFreeEntriesPerMonth: 0,    heroDiscountPercent: 50,
+    legendFreeEntriesPerMonth: 0,  legendDiscountPercent: 50,
+    xpReward: 2,
+    prizeDescription: "Free snack combo to winner",
+  },
+  {
+    templateName: "Pool Tournament",
+    defaultGame: "Pool",
+    category: "other",
+    format: "knockout",
+    scoringSystem: "best_of_1",
+    maxPlayers: 8,
+    walkInFee: 1.00,
+    warriorFreeEntriesPerMonth: 0, warriorDiscountPercent: 0,
+    heroFreeEntriesPerMonth: 0,    heroDiscountPercent: 50,
+    legendFreeEntriesPerMonth: 0,  legendDiscountPercent: 50,
+    xpReward: 2,
+    prizeDescription: "Prize pool from entries + $2 top-up",
+  },
+  {
+    templateName: "Racing Sim League",
+    defaultGame: "Gran Turismo",
+    category: "racing_sim_league",
+    format: "fastest_lap",
+    scoringSystem: "best_of_1",
+    maxPlayers: 6,
+    walkInFee: 5.00,
+    warriorFreeEntriesPerMonth: 0, warriorDiscountPercent: 0,
+    heroFreeEntriesPerMonth: 0,    heroDiscountPercent: 0,
+    legendFreeEntriesPerMonth: 1,  legendDiscountPercent: 0,
+    xpReward: 3,
+    prizeDescription: "Winner: $10 cash + leaderboard feature",
+  },
+  {
+    templateName: "Chess League",
+    defaultGame: "Chess",
+    category: "other",
+    format: "swiss",
+    scoringSystem: "best_of_1",
+    maxPlayers: 8,
+    walkInFee: 1.00,
+    warriorFreeEntriesPerMonth: 0,  warriorDiscountPercent: 0,
+    heroFreeEntriesPerMonth: -1,    heroDiscountPercent: 0,
+    legendFreeEntriesPerMonth: -1,  legendDiscountPercent: 0,
+    xpReward: 2,
+    prizeDescription: "Leaderboard points + 30 min free gaming for monthly winner",
+  },
+  {
+    templateName: "Monthly Grand Prix",
+    defaultGame: "Multi-game",
+    category: "other",
+    format: "points_league",
+    scoringSystem: "best_of_1",
+    maxPlayers: 16,
+    walkInFee: 3.00,
+    warriorFreeEntriesPerMonth: 0, warriorDiscountPercent: 0,
+    heroFreeEntriesPerMonth: 0,    heroDiscountPercent: 50,
+    legendFreeEntriesPerMonth: 0,  legendDiscountPercent: 50,
+    xpReward: 4,
+    prizeDescription: "1st: $10 cash + free entry next month. 2nd: 2 free gaming hours.",
+  },
+  {
+    templateName: "Seasonal Championship",
+    defaultGame: "All games",
+    category: "other",
+    format: "double_elimination",
+    scoringSystem: "best_of_3",
+    maxPlayers: 32,
+    walkInFee: 8.00,
+    warriorFreeEntriesPerMonth: 0, warriorDiscountPercent: 0,
+    heroFreeEntriesPerMonth: 0,    heroDiscountPercent: 25,
+    legendFreeEntriesPerMonth: 0,  legendDiscountPercent: 50,
+    xpReward: 5,
+    prizeDescription: "1st: $20 cash. 2nd: $10 cash. 3rd: 1hr free gaming.",
+  },
+];
+
 async function main() {
   console.log("Seeding games…");
   for (const name of SEED_GAMES) {
@@ -108,6 +209,17 @@ async function main() {
     } else {
       await prisma.membershipPlan.create({ data: plan });
       console.log(`  ✓ Created: ${plan.name}`);
+    }
+  }
+
+  console.log("Seeding tournament templates…");
+  for (const tpl of SEED_TEMPLATES) {
+    const existing = await prisma.tournamentTemplate.findFirst({ where: { templateName: tpl.templateName } });
+    if (existing) {
+      console.log(`  ⊘ Already exists: ${tpl.templateName}`);
+    } else {
+      await prisma.tournamentTemplate.create({ data: tpl });
+      console.log(`  ✓ Created: ${tpl.templateName}`);
     }
   }
 
