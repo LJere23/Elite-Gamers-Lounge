@@ -1,12 +1,25 @@
 export const dynamic = "force-dynamic";
 
-import { readStore } from "@/lib/database";
-import { MembershipPlan } from "@/types/admin";
+import { prisma } from "@/lib/db";
+
+interface MembershipPlan {
+  id: string;
+  name: string;
+  priceUsd: number;
+  period: string;
+  description: string;
+  perks: string[];
+}
 
 export default async function MembershipsPage() {
-  const store = await readStore();
-  const plans: MembershipPlan[] = store.memberships;
-  const activeMembers = store.players.filter((player) => player.membershipType === "member");
+  const raw = await prisma.membershipPlan.findMany({ orderBy: { priceUsd: "asc" } });
+  const plans: MembershipPlan[] = raw.map((p) => ({
+    ...p,
+    perks: JSON.parse(p.perks || "[]"),
+  }));
+  const activeMembers = await prisma.player.count({
+    where: { membershipTier: { notIn: ["Villager", "Adventurer"] } },
+  });
 
   return (
     <main className="min-h-screen pt-32 px-6">
@@ -50,7 +63,7 @@ export default async function MembershipsPage() {
         <div className="rounded-[2rem] border border-white/10 bg-slate-950/80 p-8 text-slate-300">
           <h2 className="text-2xl font-black text-white">Membership snapshot</h2>
           <p className="mt-4 max-w-2xl text-slate-400">
-            There are currently <span className="font-semibold text-white">{activeMembers.length}</span> active members in the lounge.
+            There are currently <span className="font-semibold text-white">{activeMembers}</span> active members in the lounge.
           </p>
         </div>
       </div>
