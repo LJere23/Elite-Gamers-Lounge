@@ -67,5 +67,38 @@ export async function POST(request: NextRequest) {
     },
   });
 
+  // Auto-announce the new tournament
+  const startFormatted = new Date(body.startAt).toLocaleDateString("en-US", {
+    weekday: "short", month: "short", day: "numeric",
+    hour: "2-digit", minute: "2-digit",
+  });
+  const endFormatted = new Date(body.endAt).toLocaleDateString("en-US", {
+    weekday: "short", month: "short", day: "numeric",
+    hour: "2-digit", minute: "2-digit",
+  });
+  const circuitPart = tournament.circuit ? ` — Circuit: ${tournament.circuit}` : "";
+  const prizePart   = tournament.prizeDescription
+    ? `Prize: ${tournament.prizeDescription}`
+    : tournament.prizeUsd > 0 ? `Prize pool: $${tournament.prizeUsd}` : "";
+  const xpPart = tournament.xpReward > 0 ? `+${tournament.xpReward} XP on entry` : "";
+
+  const parts = [prizePart, xpPart].filter(Boolean).join(" · ");
+
+  await prisma.announcement.create({
+    data: {
+      tournamentId:   tournament.id,
+      tournamentName: tournament.name,
+      type:           "tournament_scheduled",
+      message: [
+        `🏆 New tournament: ${tournament.name}`,
+        `Game: ${tournament.game}${circuitPart}`,
+        `Starts: ${startFormatted}`,
+        `Ends: ${endFormatted}`,
+        parts,
+      ].filter(Boolean).join(" | "),
+      expiresAt: tournament.endAt,
+    },
+  });
+
   return NextResponse.json(serializeTournament(tournament), { status: 201 });
 }
