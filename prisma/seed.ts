@@ -26,6 +26,46 @@ const SEED_JOBS = [
   },
 ];
 
+const SEED_MEMBERSHIPS = [
+  {
+    name: "Warrior",
+    priceUsd: 5,
+    period: "Week",
+    description: "Entry paid tier with discounted sessions and a head start on XP.",
+    perks: JSON.stringify([
+      "Discounted hourly rates",
+      "Priority booking",
+      "+10% XP per visit",
+      "Early tournament registration",
+    ]),
+  },
+  {
+    name: "Hero",
+    priceUsd: 25,
+    period: "Month",
+    description: "Mid-tier perks with a real XP advantage and bonus sessions.",
+    perks: JSON.stringify([
+      "Greater session discounts",
+      "Exclusive promotions",
+      "+20% XP per visit",
+      "Free monthly bonus session",
+    ]),
+  },
+  {
+    name: "Legend",
+    priceUsd: 50,
+    period: "Month",
+    description: "Premium VIP access with the highest XP boost in the lounge.",
+    perks: JSON.stringify([
+      "Highest-tier discounts",
+      "Full VIP access",
+      "Birthday rewards",
+      "Exclusive tournaments",
+      "+35% XP per visit",
+    ]),
+  },
+];
+
 async function main() {
   console.log("Seeding jobs…");
 
@@ -36,6 +76,19 @@ async function main() {
     } else {
       await prisma.job.create({ data: job });
       console.log(`  ✓ Created: ${job.name}`);
+    }
+  }
+
+  console.log("Seeding membership plans…");
+
+  for (const plan of SEED_MEMBERSHIPS) {
+    const existing = await prisma.membershipPlan.findFirst({ where: { name: plan.name } });
+    if (existing) {
+      await prisma.membershipPlan.update({ where: { id: existing.id }, data: plan });
+      console.log(`  ↻ Updated: ${plan.name}`);
+    } else {
+      await prisma.membershipPlan.create({ data: plan });
+      console.log(`  ✓ Created: ${plan.name}`);
     }
   }
 

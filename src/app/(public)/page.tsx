@@ -19,10 +19,10 @@ export default function HomePage() {
       <Announcements />
       <Countdown />
       <Features />
-      <Leaderboards />
-      <Memberships />
       <Community />
+      <Leaderboards />
       <QuestBoard />
+      <Memberships />
       <Gallery />
       <Testimonials />
       <CTA />

@@ -13,41 +13,14 @@ function waLink(planName: string): string {
   return `https://wa.me/${WA_NUMBER}?text=${msg}`;
 }
 
-const fallbackPlans: MembershipPlan[] = [
-  {
-    id: "fallback-casual",
-    name: "Casual Pass",
-    priceUsd: 5,
-    period: "Week",
-    description: "Casual player access with tournament entry and basic rewards.",
-    perks: ["Weekend gaming access", "Tournament entry rights", "Basic leaderboard visibility"],
-  },
-  {
-    id: "fallback-pro",
-    name: "Pro Membership",
-    priceUsd: 20,
-    period: "Month",
-    description: "Competitive member benefits with priority booking and discounts.",
-    perks: ["Priority booking", "Tournament discounts", "Exclusive event invites"],
-  },
-  {
-    id: "fallback-elite",
-    name: "Elite Membership",
-    priceUsd: 50,
-    period: "Month",
-    description: "VIP-level access with premium perks, events, and high-value tournament rewards.",
-    perks: ["VIP lounge access", "Premium tournament prizes", "Dedicated support"],
-  },
-];
-
 export default function Memberships() {
-  const [plans, setPlans] = useState<MembershipPlan[]>(fallbackPlans);
+  const [plans, setPlans] = useState<MembershipPlan[]>([]);
 
   useEffect(() => {
     fetch("/api/memberships")
       .then((res) => res.json())
       .then((data: MembershipPlan[]) => {
-        if (Array.isArray(data) && data.length > 0) setPlans(data);
+        if (Array.isArray(data)) setPlans(data);
       })
       .catch(() => {});
   }, []);
@@ -63,6 +36,15 @@ export default function Memberships() {
             Message us on WhatsApp to reserve your plan — we'll confirm your slot within minutes.
           </p>
         </div>
+
+        {plans.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <p className="text-2xl font-bold text-white mb-2">Coming Soon</p>
+            <p className="text-slate-400 max-w-sm">
+              Membership plans are being finalised. Check back soon or message us on WhatsApp.
+            </p>
+          </div>
+        ) : null}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {plans.map((plan, index) => (
