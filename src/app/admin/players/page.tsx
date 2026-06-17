@@ -9,18 +9,23 @@ import { Player } from "@/types/admin";
    Badge helpers
 ───────────────────────────────────────────── */
 
-function tierBadge(tier: string) {
+function tierBadge(tier: string, founderNumber?: number | null) {
   const map: Record<string, string> = {
     Villager: "border-slate-500/40 bg-slate-500/10 text-slate-400",
     Adventurer: "border-green-500/40 bg-green-500/10 text-green-400",
     Warrior: "border-blue-500/40 bg-blue-500/10 text-blue-400",
     Hero: "border-purple-500/40 bg-purple-500/10 text-purple-400",
     Legend: "border-amber-500/40 bg-amber-500/10 text-amber-400",
+    FoundingHero: "border-yellow-400/60 bg-yellow-400/10 text-yellow-300",
   };
   const cls = map[tier] ?? "border-white/10 bg-white/5 text-slate-400";
   return (
-    <span className={`rounded-full border px-3 py-0.5 text-xs font-semibold ${cls}`}>
-      {tier}
+    <span className={`rounded-full border px-3 py-0.5 text-xs font-semibold ${cls} inline-flex items-center gap-1`}>
+      {tier === "FoundingHero" && <span>★</span>}
+      {tier === "FoundingHero" ? "Founding Hero" : tier}
+      {tier === "FoundingHero" && founderNumber && (
+        <span className="opacity-60">#{founderNumber}</span>
+      )}
     </span>
   );
 }
@@ -197,6 +202,7 @@ function PlayerModal({
                 <option value="Warrior">Warrior</option>
                 <option value="Hero">Hero</option>
                 <option value="Legend">Legend</option>
+                <option value="FoundingHero">Founding Hero ($15/mo — limited)</option>
               </select>
             </label>
             {showStatus && (
@@ -288,9 +294,15 @@ function DeleteModal({
    Main page
 ───────────────────────────────────────────── */
 
+interface FounderSlots { cap: number; remaining: number; filled: number; }
+interface MemberAlert { id: string; name: string; gamerTag: string; membershipTier: string; membershipExpiresAt: string | null; isFounder: boolean; }
+interface MembershipAlerts { expired: MemberAlert[]; expiringSoon: MemberAlert[]; }
+
 export default function AdminPlayersPage() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
+  const [founderSlots, setFounderSlots] = useState<FounderSlots | null>(null);
+  const [alerts, setAlerts] = useState<MembershipAlerts | null>(null);
 
   // Modal state
   const [addOpen, setAddOpen] = useState(false);
@@ -302,10 +314,15 @@ export default function AdminPlayersPage() {
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
-    fetch("/api/players")
-      .then((res) => res.json())
-      .then((data: Player[]) => {
-        setPlayers(data);
+    Promise.all([
+      fetch("/api/players").then((r) => r.json()),
+      fetch("/api/founder-slots").then((r) => r.json()),
+      fetch("/api/admin/membership-alerts").then((r) => r.json()),
+    ])
+      .then(([playerData, slots, membershipAlerts]) => {
+        setPlayers(playerData);
+        setFounderSlots(slots);
+        setAlerts(membershipAlerts);
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -451,11 +468,50 @@ export default function AdminPlayersPage() {
         />
       )}
 
+      {/* Membership expiry alerts */}
+      {alerts && (alerts.expired.length > 0 || alerts.expiringSoon.length > 0) && (
+        <div className="space-y-3">
+          {alerts.expired.map((p) => (
+            <div key={p.id} className="flex items-center gap-3 rounded-2xl border border-red-500/30 bg-red-500/10 px-5 py-3 text-sm">
+              <span className="text-red-400 font-bold">Expired</span>
+              <span className="text-white">{p.name}</span>
+              <span className="text-slate-400">@{p.gamerTag}</span>
+              <span className="rounded-full border border-red-400/30 bg-red-400/10 px-2 py-0.5 text-xs text-red-300">{p.membershipTier}</span>
+              {p.membershipExpiresAt && (
+                <span className="text-slate-500 text-xs ml-auto">
+                  Expired {new Date(p.membershipExpiresAt).toLocaleDateString()}
+                </span>
+              )}
+            </div>
+          ))}
+          {alerts.expiringSoon.map((p) => (
+            <div key={p.id} className="flex items-center gap-3 rounded-2xl border border-yellow-500/30 bg-yellow-500/10 px-5 py-3 text-sm">
+              <span className="text-yellow-400 font-bold">Expiring</span>
+              <span className="text-white">{p.name}</span>
+              <span className="text-slate-400">@{p.gamerTag}</span>
+              <span className="rounded-full border border-yellow-400/30 bg-yellow-400/10 px-2 py-0.5 text-xs text-yellow-300">{p.membershipTier}</span>
+              {p.membershipExpiresAt && (
+                <span className="text-slate-500 text-xs ml-auto">
+                  Expires {new Date(p.membershipExpiresAt).toLocaleDateString()}
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Header row */}
       <div className="flex items-center justify-between gap-4">
-        <p className="text-sm text-slate-400">
-          {players.length} player{players.length !== 1 ? "s" : ""} in the system
-        </p>
+        <div className="flex items-center gap-4">
+          <p className="text-sm text-slate-400">
+            {players.length} player{players.length !== 1 ? "s" : ""} in the system
+          </p>
+          {founderSlots && (
+            <span className="rounded-full border border-yellow-400/30 bg-yellow-400/10 px-3 py-1 text-xs font-semibold text-yellow-300">
+              ★ {founderSlots.filled} / {founderSlots.cap} founding spots taken
+            </span>
+          )}
+        </div>
         <button
           onClick={openAdd}
           className="rounded-3xl bg-cyan-500 px-5 py-2.5 text-sm font-bold uppercase tracking-[0.15em] text-black transition hover:bg-cyan-400"
@@ -505,7 +561,7 @@ export default function AdminPlayersPage() {
                       {player.gamerTag}
                     </td>
                     <td className="px-4 py-4 text-slate-300">{player.email}</td>
-                    <td className="px-4 py-4">{tierBadge(player.membershipTier)}</td>
+                    <td className="px-4 py-4">{tierBadge(player.membershipTier, player.founderNumber)}</td>
                     <td className="px-4 py-4">{rankBadge(player.rank)}</td>
                     <td className="px-4 py-4 text-right font-semibold text-white">
                       {player.xp}

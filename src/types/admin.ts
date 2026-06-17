@@ -105,7 +105,7 @@ export interface Player {
   city: string;
   age?: number;
   membershipType?: "member" | "visitor"; // legacy compat
-  membershipTier: string; // "Villager" | "Adventurer" | "Warrior" | "Hero" | "Legend"
+  membershipTier: string; // "Villager" | "Adventurer" | "Warrior" | "Hero" | "Legend" | "FoundingHero"
   membershipPlan?: string; // legacy compat
   membershipExpiresAt?: string;
   status: PlayerStatus;
@@ -116,6 +116,15 @@ export interface Player {
   joinedAt: string;
   lastVisitAt?: string;
   avatarUrl?: string | null;
+
+  // Founder
+  isFounder?: boolean;
+  founderNumber?: number | null;
+  founderPriceLocked?: boolean;
+
+  // Usage period
+  currentPeriodEnd?: string | null;
+  hoursUsedThisPeriod?: number;
 }
 
 /*

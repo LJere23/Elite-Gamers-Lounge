@@ -17,6 +17,7 @@ const EMPTY_FORM = { name: "", priceUsd: 0, period: "Month", description: "", pe
 export default function AdminMembershipsPage() {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
+  const [founderSlots, setFounderSlots] = useState<{ cap: number; remaining: number; filled: number } | null>(null);
 
   // Edit state — null means no plan is being edited
   const [editing, setEditing] = useState<Plan | null>(null);
@@ -31,8 +32,12 @@ export default function AdminMembershipsPage() {
 
   async function loadPlans() {
     try {
-      const res = await fetch("/api/memberships");
-      setPlans(await res.json());
+      const [plans, slots] = await Promise.all([
+        fetch("/api/memberships").then((r) => r.json()),
+        fetch("/api/founder-slots").then((r) => r.json()),
+      ]);
+      setPlans(plans);
+      setFounderSlots(slots);
     } finally {
       setLoading(false);
     }
@@ -133,6 +138,22 @@ export default function AdminMembershipsPage() {
         title="Memberships"
         description="Edit membership tiers, adjust prices and perks, or create new tiers."
       />
+
+      {/* Founder slot counter */}
+      {founderSlots && (
+        <div className="flex items-center gap-4 rounded-2xl border border-yellow-400/20 bg-yellow-400/5 px-5 py-4">
+          <span className="text-2xl">★</span>
+          <div>
+            <p className="text-sm font-bold text-yellow-300">
+              {founderSlots.filled} of {founderSlots.cap} Founding Hero spots taken
+            </p>
+            <p className="text-xs text-slate-500 mt-0.5">
+              {founderSlots.remaining} slot{founderSlots.remaining !== 1 ? "s" : ""} remaining at $15/month (locked forever).
+              {founderSlots.remaining === 0 && " The Founding Hero plan is now hidden from public listings."}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Plan cards */}
       {loading ? (

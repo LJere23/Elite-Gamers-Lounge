@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/loyalty/jobs/membership-check",
+      "schedule": "0 6 * * *"
+    }
+  ]
+}

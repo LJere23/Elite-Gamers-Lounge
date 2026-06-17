@@ -4,6 +4,7 @@ import { generateSalt, hashPin, validatePinFormat } from "@/lib/pin";
 import { tryAwardJob } from "@/lib/jobs";
 import { requireAdmin } from "@/lib/adminAuth";
 import { rateLimit, clientIp } from "@/lib/rateLimit";
+import { assignFounderStatus } from "@/lib/founderService";
 
 export async function GET(request: NextRequest) {
   const authErr = await requireAdmin(request);
@@ -128,6 +129,16 @@ export async function POST(request: NextRequest) {
       playerId:  referredById,
       contextId: newPlayer.id,
     });
+  }
+
+  // Handle FoundingHero registration via founder service
+  if (membershipTier === "FoundingHero") {
+    const result = await assignFounderStatus(newPlayer.id);
+    if (!result.success) {
+      // Roll back the player creation and return error
+      await prisma.player.delete({ where: { id: newPlayer.id } });
+      return NextResponse.json({ error: result.error ?? "No founding slots remaining" }, { status: 400 });
+    }
   }
 
   if (city && city !== "Gweru") {

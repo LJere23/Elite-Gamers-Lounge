@@ -29,6 +29,36 @@ model Player {
   pinSalt             String?
   avatarUrl           String?
 
+  // Founder system
+  isFounder          Boolean   @default(false)
+  founderNumber      Int?
+  founderPriceLocked Boolean   @default(false)
+  founderRenewalDue  DateTime?
+
+  // Gaming period tracking (resets weekly for Warrior, monthly for others)
+  currentPeriodStart  DateTime?
+  currentPeriodEnd    DateTime?
+  hoursUsedThisPeriod Float     @default(0)
+
+  // Daily cap tracking (Warrior: 1hr/day, Legend: 1hr/day)
+  hoursUsedToday  Float   @default(0)
+  lastSessionDate String? // "YYYY-MM-DD" UTC — resets daily
+
+  // Monthly perks period (racing races, tournament entries, Wi-Fi)
+  // Separate from gaming period so Warriors get monthly perks tracked monthly
+  perksMonthStart   DateTime?
+  perksMonthEnd     DateTime?
+  racingRacesUsed   Int   @default(0) // Hero: 1 free, Legend: 3 free
+  fridayEntriesUsed Int   @default(0) // Warrior/Hero: 1 free, Legend: unlimited
+  racingLeagueUsed  Int   @default(0) // Legend: 1 free
+  wifiMinutesUsed   Float @default(0) // Warrior: 30 min/week (tracked on gaming period)
+
+  // Legend exclusive
+  showOnLeaderboardWall Boolean @default(false)
+
+  // Renewal notifications
+  membershipRenewalNotifiedAt DateTime?
+
   referredById   String?
   referredBy     Player?  @relation("PlayerReferrals", fields: [referredById], references: [id])
   referrals      Player[] @relation("PlayerReferrals")
@@ -42,6 +72,7 @@ model Player {
   @@index([membershipTier])
   @@index([rank])
   @@index([xp])
+  @@index([membershipExpiresAt])
 }
 
 model PlayerTitle {
@@ -117,6 +148,10 @@ model Session {
   remainingMinutes Int      @default(0)
   status           String   @default("ACTIVE")
   createdAt        DateTime @default(now())
+
+  // Membership coverage
+  membershipCovered Boolean @default(false)
+  membershipDiscount Float  @default(0)
 
   @@index([status])
   @@index([deviceId])
@@ -279,6 +314,10 @@ model LoungeSettings {
   countdownEnabled    Boolean @default(false)
   countdownTitle      String  @default("Next Event")
   countdownDate       String  @default("")
+
+  // Founder system
+  foundingSlotsCap       Int @default(50)
+  foundingSlotsRemaining Int @default(50)
 }
 
 model Testimonial {

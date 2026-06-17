@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { buildPerkStatus } from "@/lib/membershipTiers";
 
 const rankThresholds = [
   { rank: "F Rank", minXp: 30 },
@@ -55,6 +56,21 @@ async function buildPlayerResponse(player: Awaited<ReturnType<typeof fetchPlayer
       },
     }));
 
+  const perkStatus = buildPerkStatus({
+    membershipTier: player.membershipTier,
+    membershipExpiresAt: player.membershipExpiresAt,
+    currentPeriodEnd: player.currentPeriodEnd,
+    hoursUsedThisPeriod: player.hoursUsedThisPeriod,
+    hoursUsedToday: player.hoursUsedToday,
+    lastSessionDate: player.lastSessionDate,
+    perksMonthEnd: player.perksMonthEnd,
+    racingRacesUsed: player.racingRacesUsed,
+    fridayEntriesUsed: player.fridayEntriesUsed,
+    racingLeagueUsed: player.racingLeagueUsed,
+    wifiMinutesUsed: player.wifiMinutesUsed,
+    showOnLeaderboardWall: player.showOnLeaderboardWall,
+  });
+
   return {
     player: {
       id: player.id,
@@ -77,6 +93,8 @@ async function buildPlayerResponse(player: Awaited<ReturnType<typeof fetchPlayer
       joinedAt: player.joinedAt.toISOString(),
       lastVisitAt: player.lastVisitAt ? player.lastVisitAt.toISOString() : null,
       avatarUrl: player.avatarUrl ?? null,
+      isFounder: player.isFounder,
+      founderNumber: player.founderNumber ?? null,
       titles: player.titles.map((t) => ({
         ...t,
         awardedAt: t.awardedAt.toISOString(),
@@ -89,6 +107,7 @@ async function buildPlayerResponse(player: Awaited<ReturnType<typeof fetchPlayer
     xpToNextRank: xpToNext,
     nextRank: nextRank?.rank || "Max Rank",
     activeTournaments,
+    perkStatus,
   };
 }
 

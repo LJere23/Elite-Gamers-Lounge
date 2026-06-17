@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/adminAuth";
+import { assignFounderStatus } from "@/lib/founderService";
 
 function computeRank(xp: number, visitCount: number): string {
   if (visitCount < 3) return "Villager";
@@ -16,7 +17,7 @@ function computeRank(xp: number, visitCount: number): string {
 
 function getXpMultiplier(tier: string): number {
   if (tier === "Legend") return 1.35;
-  if (tier === "Hero") return 1.2;
+  if (tier === "Hero" || tier === "FoundingHero") return 1.2;
   if (tier === "Warrior") return 1.1;
   return 1.0;
 }
@@ -49,8 +50,8 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
   const body = await request.json();
 
   // Strip fields that must only be modified through their own dedicated routes
-  const { xp, rank, visitCount, ...safeBody } = body;
-  void xp; void rank; void visitCount;
+  const { xp, rank, visitCount, isFounder, founderNumber, founderPriceLocked, ...safeBody } = body;
+  void xp; void rank; void visitCount; void isFounder; void founderNumber; void founderPriceLocked;
 
   // Convert date string fields to Date objects
   const data: Record<string, unknown> = { ...safeBody };
@@ -62,6 +63,26 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
   // Fetch current player to have current xp, visitCount, membershipTier, city
   const existing = await prisma.player.findUnique({ where: { id } });
   if (!existing) return NextResponse.json({ error: "Player not found" }, { status: 404 });
+
+  // Handle FoundingHero tier assignment via founder service
+  if (data.membershipTier === "FoundingHero" && existing.membershipTier !== "FoundingHero") {
+    const result = await assignFounderStatus(id);
+    if (!result.success) {
+      return NextResponse.json({ error: result.error ?? "Cannot assign Founding Hero" }, { status: 400 });
+    }
+    // founder service already set membershipTier + founderNumber; drop from data to avoid overwrite
+    delete data.membershipTier;
+  }
+
+  // When renewing a founder membership, update founderRenewalDue
+  if (
+    existing.isFounder &&
+    existing.founderPriceLocked &&
+    data.membershipExpiresAt instanceof Date
+  ) {
+    const renewalDue = new Date(data.membershipExpiresAt as Date);
+    data.founderRenewalDue = renewalDue;
+  }
 
   // Apply update
   let updated = await prisma.player.update({

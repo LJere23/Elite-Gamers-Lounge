@@ -3,12 +3,25 @@ import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/adminAuth";
 
 // GET is public — membership tiers shown on public /memberships page
+// Founding Hero plan is hidden automatically when slots reach 0
 export async function GET() {
-  const plans = await prisma.membershipPlan.findMany();
-  const parsed = plans.map((plan) => ({
-    ...plan,
-    perks: JSON.parse(plan.perks || "[]"),
-  }));
+  const [plans, settings] = await Promise.all([
+    prisma.membershipPlan.findMany(),
+    prisma.loungeSettings.findUnique({ where: { id: "singleton" }, select: { foundingSlotsRemaining: true } }),
+  ]);
+
+  const slotsRemaining = settings?.foundingSlotsRemaining ?? 0;
+
+  const parsed = plans
+    .filter((plan) => {
+      const isFoundingPlan = plan.name.toLowerCase().includes("founding");
+      return !isFoundingPlan || slotsRemaining > 0;
+    })
+    .map((plan) => ({
+      ...plan,
+      perks: JSON.parse(plan.perks || "[]"),
+    }));
+
   return NextResponse.json(parsed);
 }
 
