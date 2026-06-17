@@ -126,6 +126,7 @@ model Tournament {
   startAt          DateTime
   endAt            DateTime
   entries          Int       @default(0)
+  entryFee         Float     @default(0)
   prizeUsd         Float     @default(0)
   prizeDescription String    @default("")
   scoringSystem    String    @default("best_of_1")

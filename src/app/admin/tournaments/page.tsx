@@ -14,6 +14,7 @@ export default function AdminTournamentsPage() {
     format: "knockout",
     scoringSystem: "best_of_1",
     entries: 8,
+    entryFee: 0,
     prizeUsd: 1200,
     prizeDescription: "",
     startAt: "",
@@ -35,6 +36,7 @@ export default function AdminTournamentsPage() {
       category: form.category,
       format: form.format,
       scoringSystem: form.scoringSystem,
+      entryFee: Number(form.entryFee),
       prizeUsd: Number(form.prizeUsd),
       entries: Number(form.entries),
       prizeDescription: form.prizeDescription,
@@ -57,6 +59,7 @@ export default function AdminTournamentsPage() {
       format: "knockout",
       scoringSystem: "best_of_1",
       entries: 8,
+      entryFee: 0,
       prizeUsd: 1200,
       prizeDescription: "",
       startAt: "",
@@ -171,7 +174,7 @@ export default function AdminTournamentsPage() {
                 placeholder="Add a short summary of the prize pool"
               />
             </label>
-            <div className="grid gap-5 sm:grid-cols-2">
+            <div className="grid gap-5 sm:grid-cols-3">
               <label className="block text-sm font-semibold text-slate-100">
                 Entries
                 <input
@@ -181,6 +184,17 @@ export default function AdminTournamentsPage() {
                   onChange={(event) => setForm({ ...form, entries: Number(event.target.value) })}
                   className="mt-3 w-full rounded-3xl border border-white/10 bg-black/40 px-4 py-3 text-white outline-none focus:border-cyan-400"
                   required
+                />
+              </label>
+              <label className="block text-sm font-semibold text-slate-100">
+                Entry Fee (USD)
+                <input
+                  type="number"
+                  min={0}
+                  step={0.5}
+                  value={form.entryFee}
+                  onChange={(event) => setForm({ ...form, entryFee: Number(event.target.value) })}
+                  className="mt-3 w-full rounded-3xl border border-white/10 bg-black/40 px-4 py-3 text-white outline-none focus:border-cyan-400"
                 />
               </label>
               <label className="block text-sm font-semibold text-slate-100">

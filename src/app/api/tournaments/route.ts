@@ -50,6 +50,7 @@ export async function POST(request: NextRequest) {
       status: body.status || "scheduled",
       startAt: new Date(body.startAt),
       endAt: new Date(body.endAt),
+      entryFee: body.entryFee || 0,
       prizeUsd: body.prizeUsd || 0,
       prizeDescription: body.prizeDescription || "",
       scoringSystem: body.scoringSystem || "best_of_1",
