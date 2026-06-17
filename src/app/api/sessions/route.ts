@@ -96,7 +96,8 @@ export async function POST(request: NextRequest) {
 
   let membershipCovered = false;
   let membershipDiscount = 0;
-  let totalPrice = durationHours * device.hourlyRate;
+  // Racing sims are priced per race (device.hourlyRate = price per race), not per hour
+  let totalPrice = racingSim ? device.hourlyRate : durationHours * device.hourlyRate;
   let playerForSession: Awaited<ReturnType<typeof prisma.player.findUnique>> | null = null;
 
   if (playerGamerTag) {

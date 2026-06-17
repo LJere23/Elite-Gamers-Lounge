@@ -159,7 +159,6 @@ function PerkStatusPanel({ perkStatus }: { perkStatus: PerkStatus }) {
       {/* Physical perks — staff reference */}
       <PerkRow label="Snack discount" value={p.snackDiscountPct > 0 ? `${p.snackDiscountPct}% off at POS` : "None"} />
       {p.chessClubIncluded && <PerkRow label="Chess Club" value="Included" highlight />}
-      {p.lockerIncluded && <PerkRow label="Locker" value="Included" highlight />}
       <PerkRow label="XP bonus per visit" value={p.xpVisitBonus > 0 ? `+${p.xpVisitBonus} (${1 + p.xpVisitBonus} XP total)` : "None (base 1 XP)"} />
     </div>
   );

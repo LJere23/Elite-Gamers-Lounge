@@ -28,7 +28,6 @@ export interface TierRule {
   // Perks (informational — applied physically, shown to staff)
   snackDiscountPct: number;
   chessClubIncluded: boolean;
-  lockerIncluded: boolean;
 
   // XP
   xpVisitBonus: number;   // flat XP added on top of base 1 XP per visit day
@@ -51,8 +50,7 @@ export const TIER_RULES: Record<TierName, TierRule> = {
     racingLeaguePriceAfterFree: 5,
     snackDiscountPct: 0,
     chessClubIncluded: false,
-    lockerIncluded: false,
-    xpVisitBonus: 0,
+      xpVisitBonus: 0,
     xpMultiplier: 1.0,
   },
   Adventurer: {
@@ -70,8 +68,7 @@ export const TIER_RULES: Record<TierName, TierRule> = {
     racingLeaguePriceAfterFree: 5,
     snackDiscountPct: 0,
     chessClubIncluded: false,
-    lockerIncluded: false,
-    xpVisitBonus: 0,
+      xpVisitBonus: 0,
     xpMultiplier: 1.0,
   },
   Warrior: {
@@ -89,8 +86,7 @@ export const TIER_RULES: Record<TierName, TierRule> = {
     racingLeaguePriceAfterFree: 5,
     snackDiscountPct: 10,
     chessClubIncluded: false,
-    lockerIncluded: false,
-    xpVisitBonus: 1,
+      xpVisitBonus: 1,
     xpMultiplier: 1.1,
   },
   Hero: {
@@ -108,8 +104,7 @@ export const TIER_RULES: Record<TierName, TierRule> = {
     racingLeaguePriceAfterFree: 5,
     snackDiscountPct: 15,
     chessClubIncluded: true,
-    lockerIncluded: false,
-    xpVisitBonus: 2,
+      xpVisitBonus: 2,
     xpMultiplier: 1.2,
   },
   FoundingHero: {
@@ -128,8 +123,7 @@ export const TIER_RULES: Record<TierName, TierRule> = {
     racingLeaguePriceAfterFree: 5,
     snackDiscountPct: 15,
     chessClubIncluded: true,
-    lockerIncluded: false,
-    xpVisitBonus: 2,
+      xpVisitBonus: 2,
     xpMultiplier: 1.2,
   },
   Legend: {
@@ -147,8 +141,7 @@ export const TIER_RULES: Record<TierName, TierRule> = {
     racingLeaguePriceAfterFree: 5,
     snackDiscountPct: 25,
     chessClubIncluded: true,
-    lockerIncluded: true,
-    xpVisitBonus: 3,
+      xpVisitBonus: 3,
     xpMultiplier: 1.35,
   },
 };
@@ -294,7 +287,7 @@ export function calculateGamingSessionPricing(params: {
 
 export interface RacingPricing {
   isRacingSim: true;
-  walkInRate: number;          // $3
+  basePrice: number;           // walk-in rate per race
   raceFree: boolean;
   freeRacesRemaining: number;
   totalPrice: number;
@@ -319,7 +312,7 @@ export function calculateRacingPricing(params: {
   if (!membershipActive || rule.racingFreeRacesPerMonth === 0) {
     return {
       isRacingSim: true,
-      walkInRate,
+      basePrice: walkInRate,
       raceFree: false,
       freeRacesRemaining: 0,
       totalPrice: walkInRate,
@@ -332,7 +325,7 @@ export function calculateRacingPricing(params: {
   if (freeRacesRemaining > 0) {
     return {
       isRacingSim: true,
-      walkInRate,
+      basePrice: walkInRate,
       raceFree: true,
       freeRacesRemaining,
       totalPrice: 0,
@@ -346,7 +339,7 @@ export function calculateRacingPricing(params: {
   const discountedPrice = walkInRate * (1 - rule.racingDiscountPct / 100);
   return {
     isRacingSim: true,
-    walkInRate,
+    basePrice: walkInRate,
     raceFree: false,
     freeRacesRemaining: 0,
     totalPrice: discountedPrice,
@@ -504,7 +497,7 @@ export interface PerkStatus {
     freeRacesRemaining: number;
     discountPct: number;
     priceAfterFree: number;
-    walkInRate: number;
+    basePrice: number;
   };
 
   tournaments: {
@@ -528,7 +521,6 @@ export interface PerkStatus {
   perks: {
     snackDiscountPct: number;
     chessClubIncluded: boolean;
-    lockerIncluded: boolean;
     showOnLeaderboardWall: boolean;
     xpVisitBonus: number;
   };
@@ -607,7 +599,7 @@ export function buildPerkStatus(
       freeRacesRemaining,
       discountPct: rule.racingDiscountPct,
       priceAfterFree: 3 * (1 - rule.racingDiscountPct / 100),
-      walkInRate: 3,
+      basePrice: 3,
     },
     tournaments: {
       fridayFreeTotal,
@@ -628,7 +620,6 @@ export function buildPerkStatus(
     perks: {
       snackDiscountPct: rule.snackDiscountPct,
       chessClubIncluded: rule.chessClubIncluded,
-      lockerIncluded: rule.lockerIncluded,
       showOnLeaderboardWall: player.showOnLeaderboardWall,
       xpVisitBonus: rule.xpVisitBonus,
     },

@@ -297,9 +297,6 @@ function GuildBenefitsPanel({ ps, membershipExpiresAt }: { ps: PerkStatus; membe
         {p.chessClubIncluded && (
           <BenefitRow icon="♟" label="Chess Club" value="Included — mention at reception" />
         )}
-        {p.lockerIncluded && (
-          <BenefitRow icon="🔒" label="Locker" value="Included — ask at reception" />
-        )}
       </div>
     </div>
   );
@@ -646,9 +643,6 @@ export default function GuildCardPage() {
             </div>
           )}
 
-          {/* Guild Benefits */}
-          <GuildBenefitsPanel ps={perkStatus} membershipExpiresAt={player.membershipExpiresAt} />
-
           {/* Stats Row */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
             {[
@@ -792,6 +786,9 @@ export default function GuildCardPage() {
             <span className="shrink-0 text-yellow-400/60 group-hover:text-yellow-400 text-2xl transition-colors">→</span>
           </div>
         </Link>
+
+        {/* ── Guild Benefits ──────────────────────────────────────────────── */}
+        <GuildBenefitsPanel ps={perkStatus} membershipExpiresAt={player.membershipExpiresAt} />
 
         <div className="text-center pb-4">
           <Link href="/" className="text-sm text-purple-400 hover:text-purple-200 transition-colors">Back to Home</Link>
