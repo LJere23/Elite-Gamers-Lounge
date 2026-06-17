@@ -231,7 +231,7 @@ export async function PATCH(
 
     const standingsMap: Record<string, { wins: number; losses: number; points: number }> = {};
     for (const e of allEntries) {
-      standingsMap[e.playerId] = { wins: 0, losses: 0, points: 0 };
+      standingsMap[e.playerId ?? e.id] = { wins: 0, losses: 0, points: 0 };
     }
 
     for (const m of allLeagueMatches) {
@@ -255,7 +255,7 @@ export async function PATCH(
     }
 
     for (const e of allEntries) {
-      const s = standingsMap[e.playerId];
+      const s = standingsMap[e.playerId ?? e.id];
       if (s) {
         await prisma.tournamentEntry.update({
           where: { id: e.id },

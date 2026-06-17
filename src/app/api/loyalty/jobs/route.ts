@@ -17,7 +17,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, description, xpReward, active } = body;
+    const { name, description, xpReward, active, jobType } = body;
 
     if (!name || !description || xpReward === undefined) {
       return NextResponse.json(
@@ -32,6 +32,7 @@ export async function POST(req: NextRequest) {
         description,
         xpReward: Number(xpReward),
         active: active !== false,
+        jobType: jobType ?? "standard",
       },
     });
 

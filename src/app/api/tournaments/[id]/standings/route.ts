@@ -71,7 +71,7 @@ export async function GET(
 
   const withWins = entries.map((e) => ({
     ...serializeEntry(e),
-    wins: winCounts[e.playerId] || 0,
+    wins: winCounts[e.playerId ?? e.id] || 0,
   }));
 
   const sorted = [...withWins].sort((a, b) => b.wins - a.wins);

@@ -4,6 +4,7 @@ import {
 } from "next/server";
 
 import { prisma } from "@/lib/db";
+import { tryAwardJob } from "@/lib/jobs";
 
 /*
 |--------------------------------------------------------------------------
@@ -127,7 +128,7 @@ export async function POST(
   const body =
     await request.json();
 
-  const { playerName, game, deviceId, hours } = body;
+  const { playerName, playerGamerTag, game, deviceId, hours } = body;
 
   /*
   |--------------------------------------------------------------------------
@@ -189,6 +190,7 @@ export async function POST(
     await prisma.session.create({
       data: {
         playerName,
+        playerGamerTag: playerGamerTag || null,
         game,
         deviceId,
         deviceName: device.name,
@@ -214,6 +216,29 @@ export async function POST(
       currentSessionId: newSession.id,
     },
   });
+
+  /*
+  |--------------------------------------------------------------------------
+  | FIRST BLOOD — auto-award on first ever session for a registered member
+  | Only fires when a gamerTag was provided (unique identifier, avoids
+  | the name-collision ambiguity of matching on playerName alone).
+  |--------------------------------------------------------------------------
+  */
+
+  if (playerGamerTag) {
+    const player = await prisma.player.findUnique({
+      where: { gamerTag: playerGamerTag },
+    });
+    if (player) {
+      const sessionCount = await prisma.session.count({
+        where: { playerGamerTag },
+      });
+      if (sessionCount === 1) {
+        // This is their first ever session
+        await tryAwardJob({ jobType: "milestone_first_session", playerId: player.id });
+      }
+    }
+  }
 
   /*
   |--------------------------------------------------------------------------

@@ -12,6 +12,7 @@ interface FormState {
   dateOfBirth: string;
   city: string;
   favouriteGame: string;
+  referredByGamerTag: string;
   pin: string;
   confirmPin: string;
 }
@@ -36,6 +37,7 @@ export default function RegisterPage() {
     dateOfBirth: "",
     city: "Gweru",
     favouriteGame: "",
+    referredByGamerTag: "",
     pin: "",
     confirmPin: "",
   });
@@ -85,6 +87,7 @@ export default function RegisterPage() {
     if (form.phone.trim()) payload.phone = form.phone.trim();
     if (form.dateOfBirth) payload.dateOfBirth = form.dateOfBirth;
     if (form.favouriteGame.trim()) payload.favouriteGame = form.favouriteGame.trim();
+    if (form.referredByGamerTag.trim()) payload.referredByGamerTag = form.referredByGamerTag.trim();
 
     // Auto-assign Otherworlder title for non-Gweru cities
     if (payload.city !== "Gweru") {
@@ -351,6 +354,23 @@ export default function RegisterPage() {
                 value={form.favouriteGame}
                 onChange={handleChange}
                 placeholder="e.g. FIFA 24, Call of Duty, Fortnite..."
+                className={inputClass}
+              />
+            </div>
+
+            {/* Referred by */}
+            <div>
+              <label htmlFor="referredByGamerTag" className={labelClass}>
+                Referred by{" "}
+                <span className="text-purple-500/50 font-normal">(optional — enter their GamerTag)</span>
+              </label>
+              <input
+                type="text"
+                id="referredByGamerTag"
+                name="referredByGamerTag"
+                placeholder="e.g. ShadowKnight99"
+                value={form.referredByGamerTag}
+                onChange={handleChange}
                 className={inputClass}
               />
             </div>

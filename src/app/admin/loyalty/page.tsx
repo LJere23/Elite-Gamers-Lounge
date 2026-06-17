@@ -32,6 +32,7 @@ interface Job {
   description: string;
   xpReward: number;
   active: boolean;
+  jobType?: string;
 }
 
 type Tab = "leaderboard" | "award" | "jobs";
@@ -584,7 +585,7 @@ export default function AdminLoyaltyPage() {
                   <div key={job.id} className="rounded-3xl border border-white/5 bg-black/40 p-4">
                     <div className="flex items-start justify-between gap-4">
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <p className="font-semibold text-white">{job.name}</p>
                           <span
                             className={`rounded-full px-2 py-0.5 text-xs font-bold ${
@@ -595,6 +596,19 @@ export default function AdminLoyaltyPage() {
                           >
                             {job.active ? "Active" : "Inactive"}
                           </span>
+                          {job.jobType && job.jobType !== "standard" && (
+                            <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${
+                              job.jobType === "milestone_first_session"
+                                ? "bg-cyan-500/20 text-cyan-300"
+                                : job.jobType === "tournament_entry"
+                                ? "bg-purple-500/20 text-purple-300"
+                                : job.jobType === "referral"
+                                ? "bg-emerald-500/20 text-emerald-300"
+                                : "bg-yellow-500/20 text-yellow-300"
+                            }`}>
+                              auto
+                            </span>
+                          )}
                         </div>
                         <p className="mt-1 text-sm text-slate-400">{job.description}</p>
                         <p className="mt-2 text-sm font-bold text-cyan-400">+{job.xpReward} XP</p>

@@ -60,7 +60,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     return NextResponse.json([], { status: 201 });
   }
 
-  const players = entries.map((e) => ({ id: e.playerId, name: e.playerName }));
+  const players = entries.map((e) => ({ id: e.playerId ?? e.id, name: e.playerName }));
   const threshold = getScoreThreshold(tournament.scoringSystem);
   const matches: {
     id: string;

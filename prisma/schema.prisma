@@ -29,6 +29,10 @@ model Player {
   pinSalt             String?
   avatarUrl           String?
 
+  referredById   String?
+  referredBy     Player?  @relation("PlayerReferrals", fields: [referredById], references: [id])
+  referrals      Player[] @relation("PlayerReferrals")
+
   titles         PlayerTitle[]
   xpLedger       XpLedger[]
   jobCompletions JobCompletion[]
@@ -58,11 +62,12 @@ model XpLedger {
 }
 
 model Job {
-  id          String @id @default(uuid())
+  id          String  @id @default(uuid())
   name        String
   description String
   xpReward    Int
   active      Boolean @default(true)
+  jobType     String  @default("standard")
 
   completions JobCompletion[]
 }
@@ -71,10 +76,13 @@ model JobCompletion {
   id          String   @id @default(uuid())
   playerId    String
   jobId       String
+  contextId   String?
   completedAt DateTime @default(now())
 
   player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
   job    Job    @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([playerId, jobId, contextId])
 }
 
 model Device {
@@ -91,6 +99,7 @@ model Device {
 model Session {
   id               String   @id @default(uuid())
   playerName       String
+  playerGamerTag   String?
   game             String
   deviceId         String
   deviceName       String
@@ -145,8 +154,9 @@ model Tournament {
 model TournamentEntry {
   id           String   @id @default(uuid())
   tournamentId String
-  playerId     String
+  playerId     String?
   playerName   String
+  guestName    String?
   registeredAt DateTime @default(now())
   status       String   @default("registered")
   points       Int      @default(0)
@@ -156,7 +166,7 @@ model TournamentEntry {
   lapTimeNote  String?
 
   tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
-  player     Player     @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  player     Player?    @relation(fields: [playerId], references: [id], onDelete: SetNull)
 }
 
 model TournamentMatch {

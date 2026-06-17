@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { generateSalt, hashPin, validatePinFormat } from "@/lib/pin";
+import { tryAwardJob } from "@/lib/jobs";
 
 export async function GET() {
   const players = await prisma.player.findMany({ orderBy: { joinedAt: "desc" } });
@@ -37,6 +38,7 @@ export async function POST(request: NextRequest) {
     membershipExpiresAt,
     favoriteGame,
     pin,
+    referredByGamerTag,
   } = body;
 
   if (!name || typeof name !== "string" || !name.trim()) {
@@ -62,6 +64,15 @@ export async function POST(request: NextRequest) {
   const pinSalt = generateSalt();
   const pinHash = hashPin(pin, pinSalt);
 
+  // Resolve optional referrer by gamerTag (must exist and not be the same person)
+  let referredById: string | null = null;
+  if (referredByGamerTag && typeof referredByGamerTag === "string" && referredByGamerTag.trim()) {
+    const referrer = await prisma.player.findUnique({
+      where: { gamerTag: referredByGamerTag.trim() },
+    });
+    if (referrer) referredById = referrer.id;
+  }
+
   let newPlayer;
   try {
   newPlayer = await prisma.player.create({
@@ -82,6 +93,7 @@ export async function POST(request: NextRequest) {
       rank: initialRank,
       pin: pinHash,
       pinSalt,
+      referredById,
     },
   });
   } catch (err: any) {
@@ -90,6 +102,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: `A player with this ${field} already exists` }, { status: 409 });
     }
     throw err;
+  }
+
+  // Community Champion — award the referrer for each unique successful referral.
+  // Known limitation: a determined user could register multiple accounts with
+  // different emails to farm this. Low risk in a single-lounge setting where
+  // staff can verify registrations. Deactivate the job in Admin → Loyalty if abused.
+  if (referredById) {
+    await tryAwardJob({
+      jobType:   "referral",
+      playerId:  referredById,
+      contextId: newPlayer.id,
+    });
   }
 
   if (city && city !== "Gweru") {

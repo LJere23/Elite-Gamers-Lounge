@@ -45,8 +45,13 @@ export default function AdminTournamentDetailPage() {
   const [players,    setPlayers]    = useState<Player[]>([]);
   const [entries,    setEntries]    = useState<TournamentEntry[]>([]);
   const [matches,    setMatches]    = useState<TournamentMatch[]>([]);
-  const [selectedPlayerId, setSelectedPlayerId] = useState("");
   const [loading,  setLoading]  = useState(false);
+  // Player search for entry registration
+  const [entrySearch,     setEntrySearch]     = useState("");
+  const [entrySearchOpen, setEntrySearchOpen] = useState(false);
+  const [entryMember,     setEntryMember]     = useState<Player | null>(null);
+  const [guestEntryName,  setGuestEntryName]  = useState("");
+  const [entryIsGuest,    setEntryIsGuest]    = useState(false);
   const [message,  setMessage]  = useState<string | null>(null);
   const [scoreInputs, setScoreInputs] = useState<Record<string, { a: string; b: string }>>({});
   const [lapInputs,   setLapInputs]   = useState<Record<string, string>>({});
@@ -55,6 +60,14 @@ export default function AdminTournamentDetailPage() {
     () => players.filter((p) => !entries.some((e) => e.playerId === p.id)),
     [players, entries]
   );
+
+  const entrySearchResults = useMemo(() => {
+    if (!entrySearch) return [];
+    const q = entrySearch.toLowerCase();
+    return availablePlayers
+      .filter((p) => p.name.toLowerCase().includes(q) || p.gamerTag.toLowerCase().includes(q))
+      .slice(0, 8);
+  }, [availablePlayers, entrySearch]);
 
   // ── Data loading ─────────────────────────────────────────────────────────
 
@@ -74,30 +87,33 @@ export default function AdminTournamentDetailPage() {
 
   useEffect(() => { loadAll(); }, [loadAll]);
 
-  useEffect(() => {
-    if (availablePlayers.length > 0 && !selectedPlayerId) {
-      setSelectedPlayerId(availablePlayers[0]?.id ?? "");
-    }
-  }, [availablePlayers, selectedPlayerId]);
 
   // ── Actions ──────────────────────────────────────────────────────────────
 
   const handleAddEntry = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!selectedPlayerId) return;
+    const payload = entryIsGuest
+      ? { guestName: guestEntryName.trim() }
+      : entryMember
+        ? { playerId: entryMember.id }
+        : null;
+    if (!payload) return;
     setLoading(true);
     setMessage(null);
     const res = await fetch(`/api/tournaments/${tournamentId}/entries`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ playerId: selectedPlayerId }),
+      body: JSON.stringify(payload),
     });
     const data = await res.json();
     if (!res.ok) {
       setMessage(data.error ?? "Unable to register player.");
     } else {
       setEntries((prev) => [...prev, data]);
-      setSelectedPlayerId("");
+      setEntryMember(null);
+      setEntrySearch("");
+      setGuestEntryName("");
+      setEntryIsGuest(false);
     }
     setLoading(false);
   };
@@ -356,23 +372,71 @@ export default function AdminTournamentDetailPage() {
             <h2 className="mt-2 text-2xl font-black text-white">{entries.length} registered</h2>
           </div>
 
-          {availablePlayers.length > 0 && !isCompleted && (
+          {!isCompleted && (
             <form onSubmit={handleAddEntry} className="space-y-3">
-              <select
-                value={selectedPlayerId}
-                onChange={(e) => setSelectedPlayerId(e.target.value)}
-                className="w-full rounded-3xl border border-white/10 bg-black/40 px-4 py-3 text-white outline-none focus:border-cyan-400 text-sm"
-              >
-                {availablePlayers.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </select>
+              {/* Mode toggle */}
+              <div className="flex gap-2">
+                <button type="button" onClick={() => { setEntryIsGuest(false); setGuestEntryName(""); }}
+                  className={`flex-1 rounded-2xl py-2 text-xs font-semibold transition ${!entryIsGuest ? "bg-cyan-500/20 border border-cyan-500/40 text-cyan-300" : "bg-white/5 border border-white/10 text-slate-400"}`}>
+                  Member
+                </button>
+                <button type="button" onClick={() => { setEntryIsGuest(true); setEntryMember(null); setEntrySearch(""); }}
+                  className={`flex-1 rounded-2xl py-2 text-xs font-semibold transition ${entryIsGuest ? "bg-cyan-500/20 border border-cyan-500/40 text-cyan-300" : "bg-white/5 border border-white/10 text-slate-400"}`}>
+                  Guest
+                </button>
+              </div>
+
+              {entryIsGuest ? (
+                <input
+                  required
+                  placeholder="Guest player name"
+                  value={guestEntryName}
+                  onChange={(e) => setGuestEntryName(e.target.value)}
+                  className="w-full rounded-3xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white placeholder:text-zinc-600 outline-none focus:border-cyan-400"
+                />
+              ) : entryMember ? (
+                <div className="flex items-center justify-between rounded-3xl border border-cyan-400/50 bg-black/40 px-4 py-3">
+                  <span className="text-white text-sm font-semibold">{entryMember.name}
+                    <span className="text-slate-400 font-normal ml-2">@{entryMember.gamerTag}</span>
+                  </span>
+                  <button type="button" onClick={() => { setEntryMember(null); setEntrySearch(""); }}
+                    className="text-slate-500 hover:text-red-400 transition ml-2 text-lg leading-none">×</button>
+                </div>
+              ) : (
+                <div className="relative">
+                  <input
+                    placeholder="Search by name or @gamerTag…"
+                    value={entrySearch}
+                    onChange={(e) => { setEntrySearch(e.target.value); setEntrySearchOpen(true); }}
+                    onFocus={() => setEntrySearchOpen(true)}
+                    onBlur={() => setTimeout(() => setEntrySearchOpen(false), 150)}
+                    className="w-full rounded-3xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white placeholder:text-zinc-600 outline-none focus:border-cyan-400"
+                  />
+                  {entrySearchOpen && entrySearch.length > 0 && (
+                    <div className="absolute z-20 mt-2 w-full rounded-2xl border border-white/10 bg-zinc-900 shadow-2xl overflow-hidden">
+                      {entrySearchResults.length > 0 ? (
+                        entrySearchResults.map((p) => (
+                          <button key={p.id} type="button"
+                            onMouseDown={() => { setEntryMember(p); setEntrySearch(""); setEntrySearchOpen(false); }}
+                            className="w-full px-4 py-3 text-left hover:bg-white/5 transition border-b border-white/5 last:border-0">
+                            <span className="text-white font-semibold text-sm">{p.name}</span>
+                            <span className="text-slate-400 text-xs ml-2">@{p.gamerTag}</span>
+                          </button>
+                        ))
+                      ) : (
+                        <p className="px-4 py-3 text-xs text-slate-500">No available members found.</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
               <button
                 type="submit"
-                disabled={loading}
-                className="w-full rounded-3xl bg-cyan-500 px-4 py-3 text-sm font-bold uppercase text-black hover:bg-cyan-400 transition disabled:opacity-60"
+                disabled={loading || (!entryIsGuest && !entryMember) || (entryIsGuest && !guestEntryName.trim())}
+                className="w-full rounded-3xl bg-cyan-500 px-4 py-3 text-sm font-bold uppercase text-black hover:bg-cyan-400 transition disabled:opacity-50"
               >
-                Register Player
+                Register {entryIsGuest ? "Guest" : "Player"}
               </button>
             </form>
           )}
@@ -396,6 +460,9 @@ export default function AdminTournamentDetailPage() {
                 <div className="flex items-center gap-2 min-w-0">
                   <PlayerAvatar name={entry.playerName} avatarUrl={entry.playerAvatarUrl} size="xs" />
                   <span className="text-sm font-semibold text-white truncate">{entry.playerName}</span>
+                  {!entry.playerId && (
+                    <span className="shrink-0 text-xs text-slate-500 border border-white/10 rounded-full px-2 py-0.5">Guest</span>
+                  )}
                 </div>
                 {!isCompleted && !hasMatches && (
                   <button

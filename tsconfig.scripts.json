@@ -9,6 +9,6 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["scripts/**/*.ts", "src/**/*.ts"],
+  "include": ["scripts/**/*.ts", "prisma/**/*.ts", "src/**/*.ts"],
   "exclude": ["node_modules", ".next"]
 }

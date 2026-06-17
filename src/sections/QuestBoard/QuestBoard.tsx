@@ -12,12 +12,6 @@ interface Quest {
   xpReward: number;
 }
 
-const PREVIEW_QUESTS: Quest[] = [
-  { id: "1", name: "First Blood", description: "Play your first session at the lounge", xpReward: 50 },
-  { id: "2", name: "Tournament Contender", description: "Enter any official tournament", xpReward: 100 },
-  { id: "3", name: "Community Champion", description: "Refer a friend who registers", xpReward: 75 },
-];
-
 function xpBadge(xp: number) {
   if (xp >= 200) return "text-amber-300 border-amber-400/50 bg-amber-900/40";
   if (xp >= 100) return "text-purple-300 border-purple-400/50 bg-purple-900/40";
@@ -26,17 +20,17 @@ function xpBadge(xp: number) {
 }
 
 export default function QuestBoard() {
-  const [quests, setQuests] = useState<Quest[]>(PREVIEW_QUESTS);
+  const [quests, setQuests] = useState<Quest[] | null>(null);
 
   useEffect(() => {
     fetch("/api/portal/quests")
       .then((r) => r.json())
       .then((d: { jobs: Quest[] }) => {
-        if (Array.isArray(d.jobs) && d.jobs.length > 0) {
+        if (Array.isArray(d.jobs)) {
           setQuests(d.jobs.slice(0, 3));
         }
       })
-      .catch(() => {});
+      .catch(() => setQuests([]));
   }, []);
 
   return (
@@ -103,25 +97,42 @@ export default function QuestBoard() {
 
           {/* Right — quest preview cards */}
           <div className="space-y-4">
-            {quests.map((quest, i) => (
-              <motion.div
-                key={quest.id}
-                variants={slideUp}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="rounded-2xl border border-purple-500/20 bg-[#1E1654]/50 backdrop-blur-sm p-5 flex items-center justify-between gap-4"
-              >
-                <div className="min-w-0">
-                  <p className="font-black text-white text-base">{quest.name}</p>
-                  <p className="text-purple-300/80 text-sm mt-0.5 truncate">{quest.description}</p>
+            {quests === null ? (
+              // Loading skeleton
+              [0, 1, 2].map((i) => (
+                <div key={i} className="rounded-2xl border border-purple-500/10 bg-[#1E1654]/30 p-5 flex items-center justify-between gap-4 animate-pulse">
+                  <div className="space-y-2 flex-1">
+                    <div className="h-4 w-32 rounded bg-white/10" />
+                    <div className="h-3 w-48 rounded bg-white/5" />
+                  </div>
+                  <div className="h-7 w-16 rounded-full bg-white/10 shrink-0" />
                 </div>
-                <span className={`shrink-0 text-sm font-black px-3 py-1.5 rounded-full border ${xpBadge(quest.xpReward)}`}>
-                  +{quest.xpReward} XP
-                </span>
-              </motion.div>
-            ))}
+              ))
+            ) : quests.length === 0 ? (
+              <div className="rounded-2xl border border-purple-500/10 bg-[#1E1654]/30 p-8 text-center text-purple-300/50 text-sm">
+                Quest board loading — visit us in person to see active quests.
+              </div>
+            ) : (
+              quests.map((quest, i) => (
+                <motion.div
+                  key={quest.id}
+                  variants={slideUp}
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
+                  className="rounded-2xl border border-purple-500/20 bg-[#1E1654]/50 backdrop-blur-sm p-5 flex items-center justify-between gap-4"
+                >
+                  <div className="min-w-0">
+                    <p className="font-black text-white text-base">{quest.name}</p>
+                    <p className="text-purple-300/80 text-sm mt-0.5 truncate">{quest.description}</p>
+                  </div>
+                  <span className={`shrink-0 text-sm font-black px-3 py-1.5 rounded-full border ${xpBadge(quest.xpReward)}`}>
+                    +{quest.xpReward} XP
+                  </span>
+                </motion.div>
+              ))
+            )}
 
             <Link
               href="/quests"

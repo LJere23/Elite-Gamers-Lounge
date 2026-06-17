@@ -98,8 +98,9 @@ export async function POST(
     },
   });
 
-  // 8. Try to award XP (Competition Winner: +3 XP) to winning player
+  // 8. Try to award XP (Competition Winner: +3 XP) to winning player (skip guests)
   try {
+    if (!winner.playerId) throw new Error("Guest winner — no XP to award");
     const player = await prisma.player.findUnique({
       where: { id: winner.playerId },
     });

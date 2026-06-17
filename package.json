@@ -10,7 +10,11 @@
     "db:migrate": "npx prisma migrate dev",
     "db:seed": "ts-node --project tsconfig.scripts.json scripts/migrate-from-json.ts",
     "db:studio": "npx prisma studio",
-    "db:generate": "npx prisma generate"
+    "db:generate": "npx prisma generate",
+    "db:seed-jobs": "ts-node --project tsconfig.scripts.json prisma/seed.ts"
+  },
+  "prisma": {
+    "seed": "ts-node --project tsconfig.scripts.json prisma/seed.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
