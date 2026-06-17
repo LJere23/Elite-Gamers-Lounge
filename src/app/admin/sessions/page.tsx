@@ -123,11 +123,7 @@ export default function SessionsPage() {
     [devices]
   );
 
-  // Games for the selected device (fall back to the global library)
-  const selectedDevice = devices.find((d) => d.id === form.deviceId);
-  const gameOptions    = (selectedDevice?.supportedGames?.length ?? 0) > 0
-    ? selectedDevice!.supportedGames
-    : allGames;
+  const gameOptions = allGames;
 
   // Filtered member search results
   const memberResults = useMemo(() => {

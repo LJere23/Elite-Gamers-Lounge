@@ -19,8 +19,7 @@ const links = [
   { label: "Blog",         href: "/admin/blog",         icon: BookOpen },
   { label: "Testimonials", href: "/admin/testimonials", icon: MessageSquareQuote },
   { label: "Settings",     href: "/admin/settings",     icon: Settings },
-  { label: "Devices",      href: "/admin/devices",      icon: Cpu },
-  { label: "Games",        href: "/admin/games",        icon: Gamepad2 },
+  { label: "Devices & Games", href: "/admin/devices", icon: Cpu },
 ];
 
 function NavLinks({ onNav }: { onNav?: () => void }) {

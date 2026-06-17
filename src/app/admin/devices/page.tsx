@@ -4,9 +4,14 @@ import { useEffect, useState } from "react";
 import { Device } from "@/types/device";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
 
+interface Game {
+  id: string;
+  name: string;
+}
+
 export default function DevicesPage() {
   const [devices, setDevices] = useState<Device[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [deviceLoading, setDeviceLoading] = useState(false);
   const [form, setForm] = useState({
     name: "",
     type: "PS5",
@@ -14,9 +19,10 @@ export default function DevicesPage() {
     location: "Main Floor",
   });
 
-  // per-device game select state
-  const [gameInputs, setGameInputs] = useState<Record<string, string>>({});
-  const [allGames, setAllGames] = useState<string[]>([]);
+  const [games, setGames] = useState<Game[]>([]);
+  const [gameInput, setGameInput] = useState("");
+  const [gameAdding, setGameAdding] = useState(false);
+  const [gameError, setGameError] = useState("");
 
   async function loadDevices() {
     try {
@@ -27,17 +33,23 @@ export default function DevicesPage() {
     }
   }
 
+  async function loadGames() {
+    try {
+      const res = await fetch("/api/games");
+      setGames(await res.json());
+    } catch {}
+  }
+
   useEffect(() => {
     loadDevices();
-    fetch("/api/games")
-      .then((r) => r.json())
-      .then((data: { name: string }[]) => setAllGames(data.map((g) => g.name)))
-      .catch(() => {});
+    loadGames();
   }, []);
+
+  // ── Devices ────────────────────────────────────────────────────────────────
 
   async function createDevice(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
+    setDeviceLoading(true);
     try {
       const res = await fetch("/api/devices", {
         method: "POST",
@@ -48,7 +60,7 @@ export default function DevicesPage() {
       setDevices((prev) => [created, ...prev]);
       setForm({ name: "", type: "PS5", hourlyRate: 2, location: "Main Floor" });
     } finally {
-      setLoading(false);
+      setDeviceLoading(false);
     }
   }
 
@@ -68,99 +80,105 @@ export default function DevicesPage() {
     setDevices((prev) => prev.map((d) => (d.id === id ? updated : d)));
   }
 
-  async function patchGames(id: string, games: string[]) {
-    const res = await fetch(`/api/devices/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ supportedGames: games }),
-    });
-    const updated = await res.json();
-    setDevices((prev) => prev.map((d) => (d.id === id ? updated : d)));
+  // ── Games ──────────────────────────────────────────────────────────────────
+
+  async function addGame(e: React.FormEvent) {
+    e.preventDefault();
+    const name = gameInput.trim();
+    if (!name) return;
+    setGameAdding(true);
+    setGameError("");
+    try {
+      const res = await fetch("/api/games", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setGameError(data.error ?? "Failed to add game"); return; }
+      setGames((prev) => [...prev, data].sort((a, b) => a.name.localeCompare(b.name)));
+      setGameInput("");
+    } finally {
+      setGameAdding(false);
+    }
   }
 
-  function addGame(device: Device) {
-    const title = (gameInputs[device.id] || "").trim();
-    if (!title) return;
-    const current = Array.isArray(device.supportedGames) ? device.supportedGames : [];
-    if (current.includes(title)) return;
-    patchGames(device.id, [...current, title]);
-    setGameInputs((prev) => ({ ...prev, [device.id]: "" }));
+  async function deleteGame(game: Game) {
+    if (!confirm(`Remove "${game.name}" from the games list?`)) return;
+    await fetch(`/api/games/${game.id}`, { method: "DELETE" });
+    setGames((prev) => prev.filter((g) => g.id !== game.id));
   }
 
-  function removeGame(device: Device, game: string) {
-    const current = Array.isArray(device.supportedGames) ? device.supportedGames : [];
-    patchGames(device.id, current.filter((g) => g !== game));
-  }
+  // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <section className="space-y-8">
+    <section className="space-y-12">
       <AdminPageHeader
-        title="Devices"
-        description="Manage consoles, PCs, simulators and the games available on each station."
+        title="Devices & Games"
+        description="Manage the stations in the lounge and the games available for players to choose from."
       />
 
-      {/* Add device form */}
-      <form
-        onSubmit={createDevice}
-        className="rounded-[2rem] border border-white/10 bg-slate-950/80 p-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4"
-      >
-        <input
-          required
-          placeholder="Device name"
-          value={form.name}
-          onChange={(e) => setForm({ ...form, name: e.target.value })}
-          className="bg-black border border-white/10 rounded-2xl px-4 py-3 text-white placeholder:text-zinc-500 outline-none focus:border-cyan-400"
-        />
-        <select
-          value={form.type}
-          onChange={(e) => setForm({ ...form, type: e.target.value })}
-          className="bg-black border border-white/10 rounded-2xl px-4 py-3 text-white outline-none focus:border-cyan-400"
-        >
-          <option>PS5</option>
-          <option>PS4</option>
-          <option>Gaming PC</option>
-          <option>Racing Simulator</option>
-          <option>VR</option>
-        </select>
-        <input
-          type="number"
-          required
-          placeholder="Hourly Rate ($)"
-          value={form.hourlyRate}
-          onChange={(e) => setForm({ ...form, hourlyRate: Number(e.target.value) })}
-          className="bg-black border border-white/10 rounded-2xl px-4 py-3 text-white placeholder:text-zinc-500 outline-none focus:border-cyan-400"
-        />
-        <input
-          required
-          placeholder="Location"
-          value={form.location}
-          onChange={(e) => setForm({ ...form, location: e.target.value })}
-          className="bg-black border border-white/10 rounded-2xl px-4 py-3 text-white placeholder:text-zinc-500 outline-none focus:border-cyan-400"
-        />
-        <button
-          disabled={loading}
-          className="md:col-span-2 xl:col-span-4 bg-cyan-400 text-black font-bold py-4 rounded-2xl hover:bg-cyan-300 transition disabled:opacity-50"
-        >
-          {loading ? "Creating…" : "Add Device"}
-        </button>
-      </form>
+      {/* ── DEVICES ── */}
+      <div className="space-y-6">
+        <h2 className="text-xl font-black text-white">Devices</h2>
 
-      {/* Device cards */}
-      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-        {devices.map((device) => {
-          const games = Array.isArray(device.supportedGames) ? device.supportedGames : [];
-          return (
+        <form
+          onSubmit={createDevice}
+          className="rounded-[2rem] border border-white/10 bg-slate-950/80 p-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4"
+        >
+          <input
+            required
+            placeholder="Device name"
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+            className="bg-black border border-white/10 rounded-2xl px-4 py-3 text-white placeholder:text-zinc-500 outline-none focus:border-cyan-400"
+          />
+          <select
+            value={form.type}
+            onChange={(e) => setForm({ ...form, type: e.target.value })}
+            className="bg-black border border-white/10 rounded-2xl px-4 py-3 text-white outline-none focus:border-cyan-400"
+          >
+            <option>PS5</option>
+            <option>PS4</option>
+            <option>Gaming PC</option>
+            <option>Racing Simulator</option>
+            <option>VR</option>
+          </select>
+          <input
+            type="number"
+            required
+            placeholder="Hourly Rate ($)"
+            value={form.hourlyRate}
+            onChange={(e) => setForm({ ...form, hourlyRate: Number(e.target.value) })}
+            className="bg-black border border-white/10 rounded-2xl px-4 py-3 text-white placeholder:text-zinc-500 outline-none focus:border-cyan-400"
+          />
+          <input
+            required
+            placeholder="Location"
+            value={form.location}
+            onChange={(e) => setForm({ ...form, location: e.target.value })}
+            className="bg-black border border-white/10 rounded-2xl px-4 py-3 text-white placeholder:text-zinc-500 outline-none focus:border-cyan-400"
+          />
+          <button
+            disabled={deviceLoading}
+            className="md:col-span-2 xl:col-span-4 bg-cyan-400 text-black font-bold py-4 rounded-2xl hover:bg-cyan-300 transition disabled:opacity-50"
+          >
+            {deviceLoading ? "Creating…" : "Add Device"}
+          </button>
+        </form>
+
+        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+          {devices.map((device) => (
             <div key={device.id} className="rounded-[2rem] border border-white/10 bg-slate-950/80 p-6 space-y-5">
 
-              {/* Header */}
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <h2 className="text-xl font-black text-white">{device.name}</h2>
+                  <h3 className="text-xl font-black text-white">{device.name}</h3>
                   <p className="text-zinc-400 text-sm mt-0.5">{device.type} · {device.location}</p>
                 </div>
                 <span className={`shrink-0 px-3 py-1 rounded-full text-xs font-bold ${
-                  device.status === "available"   ? "bg-green-500/20 text-green-400"  :
-                  device.status === "busy"        ? "bg-red-500/20 text-red-400"      :
+                  device.status === "available"  ? "bg-green-500/20 text-green-400"  :
+                  device.status === "busy"       ? "bg-red-500/20 text-red-400"      :
                   "bg-yellow-500/20 text-yellow-400"
                 }`}>
                   {device.status}
@@ -169,65 +187,6 @@ export default function DevicesPage() {
 
               <p className="text-zinc-300 text-sm">${device.hourlyRate}/hr</p>
 
-              {/* Games section */}
-              <div>
-                <p className="text-xs uppercase tracking-widest text-cyan-400 mb-2">Games</p>
-
-                {/* Existing games */}
-                {games.length === 0 ? (
-                  <p className="text-zinc-600 text-sm italic mb-3">No games added yet.</p>
-                ) : (
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    {games.map((game) => (
-                      <span
-                        key={game}
-                        className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm text-zinc-200"
-                      >
-                        {game}
-                        <button
-                          onClick={() => removeGame(device, game)}
-                          className="text-zinc-500 hover:text-red-400 transition leading-none"
-                          title="Remove game"
-                        >
-                          ×
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                {/* Add game — dropdown from games library */}
-                {(() => {
-                  const available = allGames.filter((g) => !games.includes(g));
-                  return available.length > 0 ? (
-                    <div className="flex gap-2">
-                      <select
-                        value={gameInputs[device.id] || ""}
-                        onChange={(e) => setGameInputs((prev) => ({ ...prev, [device.id]: e.target.value }))}
-                        className="flex-1 bg-black border border-white/10 rounded-2xl px-3 py-2 text-sm text-white outline-none focus:border-cyan-400"
-                      >
-                        <option value="">Select a game…</option>
-                        {available.map((g) => (
-                          <option key={g} value={g}>{g}</option>
-                        ))}
-                      </select>
-                      <button
-                        onClick={() => addGame(device)}
-                        className="rounded-2xl bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 px-4 py-2 text-sm font-bold hover:bg-cyan-500/30 transition"
-                      >
-                        Add
-                      </button>
-                    </div>
-                  ) : (
-                    <p className="text-xs text-zinc-600 italic">
-                      All library games added.{" "}
-                      <a href="/admin/games" className="text-cyan-500 hover:underline">Manage library</a>
-                    </p>
-                  );
-                })()}
-              </div>
-
-              {/* Status + delete */}
               <div className="flex flex-wrap gap-2 pt-1">
                 <button
                   onClick={() => updateStatus(device.id, "available")}
@@ -250,9 +209,72 @@ export default function DevicesPage() {
               </div>
 
             </div>
-          );
-        })}
+          ))}
+        </div>
       </div>
+
+      {/* ── GAMES ── */}
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-xl font-black text-white">Games</h2>
+          <p className="text-zinc-400 text-sm mt-1">
+            These games appear in the session dropdown. Add anything the lounge offers — FIFA, Pool, Darts, Formula 1, Chess, etc.
+          </p>
+        </div>
+
+        <form
+          onSubmit={addGame}
+          className="rounded-[2rem] border border-white/10 bg-slate-950/80 p-6 flex gap-3"
+        >
+          <input
+            required
+            placeholder="Game name — e.g. Formula 1 24, Pool, Darts…"
+            value={gameInput}
+            onChange={(e) => { setGameInput(e.target.value); setGameError(""); }}
+            className="flex-1 bg-black border border-white/10 rounded-2xl px-4 py-3 text-white placeholder:text-zinc-500 outline-none focus:border-cyan-400"
+          />
+          <button
+            disabled={gameAdding}
+            className="bg-cyan-400 hover:bg-cyan-300 transition text-black font-bold px-6 py-3 rounded-2xl disabled:opacity-50"
+          >
+            {gameAdding ? "Adding…" : "Add Game"}
+          </button>
+        </form>
+
+        {gameError && (
+          <p className="text-rose-400 text-sm bg-rose-950/30 border border-rose-500/30 rounded-2xl px-4 py-3">
+            {gameError}
+          </p>
+        )}
+
+        <div className="rounded-[2rem] border border-white/10 bg-slate-950/80 p-6">
+          <p className="text-sm uppercase tracking-[0.28em] text-cyan-400 mb-6">
+            {games.length} game{games.length !== 1 ? "s" : ""} in library
+          </p>
+
+          {games.length === 0 ? (
+            <p className="py-8 text-center text-zinc-500">No games yet — add your first one above.</p>
+          ) : (
+            <div className="space-y-2">
+              {games.map((game) => (
+                <div
+                  key={game.id}
+                  className="flex items-center justify-between rounded-2xl border border-white/5 bg-black/40 px-4 py-3"
+                >
+                  <span className="text-white font-semibold">{game.name}</span>
+                  <button
+                    onClick={() => deleteGame(game)}
+                    className="text-xs font-semibold text-zinc-500 hover:text-red-400 transition border border-zinc-700/40 hover:border-red-500/40 rounded-xl px-3 py-1.5"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
     </section>
   );
 }
