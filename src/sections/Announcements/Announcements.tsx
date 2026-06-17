@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { prisma } from "@/lib/db";
 
 const TYPE_BADGE: Record<string, string> = {
@@ -18,35 +19,34 @@ export default async function Announcements() {
   let rows: Awaited<ReturnType<typeof prisma.announcement.findMany>> = [];
   try {
     rows = await prisma.announcement.findMany({
-      where: {
-        OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
-      },
+      where: { OR: [{ expiresAt: null }, { expiresAt: { gt: now } }] },
       orderBy: { createdAt: "desc" },
-      take: 10,
+      take: 2,
     });
   } catch {
-    // DB unavailable (e.g. cold start) — render empty state silently
+    // DB unavailable — render empty state silently
   }
 
-  if (rows.length === 0) {
-    return (
-      <section className="section-padding bg-slate-950/70">
-        <div className="max-w-7xl mx-auto rounded-[2rem] border border-white/10 bg-slate-950/80 p-8 shadow-2xl shadow-black/20">
-          <p className="text-sm uppercase tracking-[0.28em] text-cyan-400">Announcements</p>
-          <h2 className="mt-3 text-4xl font-black text-white">Live updates for the lounge</h2>
-          <p className="mt-4 text-slate-400">No announcements right now. Check back later for event news and special offers.</p>
-        </div>
-      </section>
-    );
-  }
+  if (rows.length === 0) return null;
 
   return (
     <section className="section-padding bg-slate-950/70">
       <div className="max-w-7xl mx-auto rounded-[2rem] border border-white/10 bg-slate-950/80 p-8 shadow-2xl shadow-black/20">
-        <p className="text-sm uppercase tracking-[0.28em] text-cyan-400">Announcements</p>
-        <h2 className="mt-3 text-4xl font-black text-white">Latest updates</h2>
 
-        <div className="mt-8 space-y-4">
+        <div className="flex items-end justify-between mb-8">
+          <div>
+            <p className="text-sm uppercase tracking-[0.28em] text-cyan-400">Announcements</p>
+            <h2 className="mt-2 text-4xl font-black text-white">Latest updates</h2>
+          </div>
+          <Link
+            href="/announcements"
+            className="text-sm font-bold text-cyan-400 hover:text-cyan-300 uppercase tracking-widest transition flex items-center gap-1.5 shrink-0"
+          >
+            View all →
+          </Link>
+        </div>
+
+        <div className="space-y-4">
           {rows.map((a) => {
             const type = a.type ?? "general";
             return (
@@ -62,19 +62,22 @@ export default async function Announcements() {
                 <p className="mt-3 text-slate-200 text-lg leading-relaxed">{a.message}</p>
                 <div className="mt-3 flex items-center gap-4 text-xs text-slate-500">
                   <span>{new Date(a.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</span>
-                  {a.expiresAt && (
-                    <span>Active until {new Date(a.expiresAt).toLocaleDateString()}</span>
-                  )}
-                  {a.winnerName && (
-                    <span className="text-yellow-400 font-semibold">Winner: {a.winnerName}</span>
-                  )}
-                  {a.prizeAmount && (
-                    <span className="text-green-400">Prize: ${a.prizeAmount}</span>
-                  )}
+                  {a.expiresAt && <span>Active until {new Date(a.expiresAt).toLocaleDateString()}</span>}
+                  {a.winnerName && <span className="text-yellow-400 font-semibold">Winner: {a.winnerName}</span>}
+                  {a.prizeAmount && <span className="text-green-400">Prize: ${a.prizeAmount}</span>}
                 </div>
               </div>
             );
           })}
+        </div>
+
+        <div className="mt-6 text-center">
+          <Link
+            href="/announcements"
+            className="inline-flex items-center gap-2 rounded-full border border-cyan-500/30 px-6 py-2.5 text-sm font-bold text-cyan-400 hover:bg-cyan-500/10 transition uppercase tracking-widest"
+          >
+            See all announcements
+          </Link>
         </div>
       </div>
     </section>
