@@ -291,6 +291,7 @@ export interface RacingPricing {
   raceFree: boolean;
   freeRacesRemaining: number;
   totalPrice: number;
+  membershipCovered: boolean;  // true when race is free via membership
   membershipDiscount: number;
   label: string;
   warning: string | null;
@@ -316,6 +317,7 @@ export function calculateRacingPricing(params: {
       raceFree: false,
       freeRacesRemaining: 0,
       totalPrice: walkInRate,
+      membershipCovered: false,
       membershipDiscount: 0,
       label: `$${walkInRate.toFixed(2)} (walk-in)`,
       warning: null,
@@ -329,6 +331,7 @@ export function calculateRacingPricing(params: {
       raceFree: true,
       freeRacesRemaining,
       totalPrice: 0,
+      membershipCovered: true,
       membershipDiscount: walkInRate,
       label: "FREE (membership)",
       warning: null,
@@ -343,6 +346,7 @@ export function calculateRacingPricing(params: {
     raceFree: false,
     freeRacesRemaining: 0,
     totalPrice: discountedPrice,
+    membershipCovered: false,
     membershipDiscount: walkInRate - discountedPrice,
     label: `$${discountedPrice.toFixed(2)} (${rule.racingDiscountPct}% off — free races used)`,
     warning: `All ${rule.racingFreeRacesPerMonth} free race${rule.racingFreeRacesPerMonth > 1 ? "s" : ""} used this month.`,
