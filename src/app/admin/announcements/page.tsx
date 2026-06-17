@@ -32,6 +32,7 @@ const TYPE_LABEL: Record<string, string> = {
 
 export default function AdminAnnouncementsPage() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [loungeName, setLoungeName]       = useState("Elite Gamers Lounge");
   const [loading, setLoading]             = useState(false);
   const [message, setMessage]             = useState("");
   const [expiryDays, setExpiryDays]       = useState("");
@@ -44,8 +45,15 @@ export default function AdminAnnouncementsPage() {
   const captureRef = useRef<HTMLDivElement>(null);
 
   async function load() {
-    const res = await fetch("/api/announcements/all");
-    if (res.ok) setAnnouncements(await res.json());
+    const [annRes, settingsRes] = await Promise.all([
+      fetch("/api/announcements/all"),
+      fetch("/api/settings"),
+    ]);
+    if (annRes.ok) setAnnouncements(await annRes.json());
+    if (settingsRes.ok) {
+      const s = await settingsRes.json();
+      if (s.name) setLoungeName(s.name);
+    }
   }
 
   useEffect(() => { load(); }, []);
@@ -320,7 +328,7 @@ export default function AdminAnnouncementsPage() {
                 className="border border-white/10"
               >
                 <div style={{ transform: "scale(0.5)", transformOrigin: "top left" }}>
-                  <AnnouncementShareCard announcement={shareCard} />
+                  <AnnouncementShareCard announcement={shareCard} loungeName={loungeName} />
                 </div>
               </div>
             </div>
@@ -351,7 +359,7 @@ export default function AdminAnnouncementsPage() {
       {/* Offscreen capture target — positioned off-screen so html2canvas can read it */}
       {shareCard && (
         <div style={{ position: "fixed", top: -1200, left: 0, pointerEvents: "none" }}>
-          <AnnouncementShareCard ref={captureRef} announcement={shareCard} />
+          <AnnouncementShareCard ref={captureRef} announcement={shareCard} loungeName={loungeName} />
         </div>
       )}
     </section>

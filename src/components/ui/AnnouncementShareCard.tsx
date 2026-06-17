@@ -97,16 +97,16 @@ interface ParsedCard {
 }
 
 function extractGamerTag(msg: string): string | null {
-  // New format: @GamerTag
-  const atMatch = msg.match(/@(\S+)/);
+  // @GamerTag — only alphanumeric + underscore (no trailing punctuation like !)
+  const atMatch = msg.match(/@([A-Za-z0-9_]+)/);
   if (atMatch) return atMatch[1];
   // Old jobs.ts format: Name (GamerTag) ranked up...
-  const parenMatch = msg.match(/\(([^)]+)\)/);
-  if (parenMatch) return parenMatch[1];
+  const parenMatch = msg.match(/\(([A-Za-z0-9_]+)\)/);
+  if (parenMatch) return parenMatch[1].trim();
   return null;
 }
 
-function parse(a: Announcement): ParsedCard {
+function parse(a: Announcement, loungeName: string): ParsedCard {
   const t   = (a.type ?? "general");
   const msg = a.message;
 
@@ -128,7 +128,7 @@ function parse(a: Announcement): ParsedCard {
     const tag = extractGamerTag(msg);
     return {
       headline: tag ? `@${tag}` : "A Guild Member",
-      lines:    ["Happy Birthday!", "From all of us at Gweru's Gamers Lounge 🎮"],
+      lines:    ["Happy Birthday!", `From all of us at ${loungeName} 🎮`],
     };
   }
 
@@ -204,10 +204,11 @@ function Brackets({ color }: { color: string }) {
 
 // ── Celebration card (rank_up / title_awarded) ─────────────────────────────
 
-function CelebrationCard({ theme, parsed, type }: {
+function CelebrationCard({ theme, parsed, type, loungeName }: {
   theme: typeof CARD_THEME[string];
   parsed: ParsedCard;
   type: string;
+  loungeName: string;
 }) {
   const isTitle = type === "title_awarded";
 
@@ -243,7 +244,7 @@ function CelebrationCard({ theme, parsed, type }: {
           fontSize: 10, fontWeight: 800, letterSpacing: "0.22em",
           color: "rgba(255,255,255,0.4)", textTransform: "uppercase",
         }}>
-          GWERU&apos;S GAMERS LOUNGE
+          {loungeName.toUpperCase()}
         </span>
         <span style={{
           fontSize: 9, fontWeight: 800, letterSpacing: "0.18em",
@@ -333,7 +334,7 @@ function CelebrationCard({ theme, parsed, type }: {
           fontSize: 9, fontWeight: 700, letterSpacing: "0.2em",
           color: `rgba(${theme.accentRgb},0.45)`, textTransform: "uppercase",
         }}>
-          gwerusgamerslounge.com
+          {loungeName}
         </span>
       </div>
     </>
@@ -342,10 +343,11 @@ function CelebrationCard({ theme, parsed, type }: {
 
 // ── Standard card (all other types) ──────────────────────────────────────────
 
-function StandardCard({ theme, parsed, type }: {
+function StandardCard({ theme, parsed, type, loungeName }: {
   theme: typeof CARD_THEME[string];
   parsed: ParsedCard;
   type: string;
+  loungeName: string;
 }) {
   const isBday   = type === "birthday";
   const isLeader = type === "weekly_leaderboard";
@@ -373,7 +375,7 @@ function StandardCard({ theme, parsed, type }: {
           fontSize: 11, fontWeight: 800, letterSpacing: "0.22em",
           color: "rgba(255,255,255,0.45)", textTransform: "uppercase",
         }}>
-          GWERU&apos;S GAMERS LOUNGE
+          {loungeName.toUpperCase()}
         </span>
         <span style={{
           fontSize: 10, fontWeight: 800, letterSpacing: "0.18em",
@@ -444,7 +446,7 @@ function StandardCard({ theme, parsed, type }: {
           fontSize: 10, fontWeight: 700, letterSpacing: "0.2em",
           color: `rgba(${theme.accentRgb},0.5)`, textTransform: "uppercase",
         }}>
-          gwerusgamerslounge.com
+          {loungeName}
         </span>
       </div>
     </>
@@ -455,13 +457,14 @@ function StandardCard({ theme, parsed, type }: {
 
 interface Props {
   announcement: Announcement;
+  loungeName?: string;
 }
 
 export const AnnouncementShareCard = forwardRef<HTMLDivElement, Props>(
-  function AnnouncementShareCard({ announcement }, ref) {
+  function AnnouncementShareCard({ announcement, loungeName = "Elite Gamers Lounge" }, ref) {
     const type  = (announcement.type ?? "general") as string;
     const theme = CARD_THEME[type] ?? CARD_THEME.general;
-    const parsed = parse(announcement);
+    const parsed = parse(announcement, loungeName);
     const isCelebration = type === "rank_up" || type === "title_awarded";
 
     return (
@@ -478,9 +481,9 @@ export const AnnouncementShareCard = forwardRef<HTMLDivElement, Props>(
         }}
       >
         {isCelebration ? (
-          <CelebrationCard theme={theme} parsed={parsed} type={type} />
+          <CelebrationCard theme={theme} parsed={parsed} type={type} loungeName={loungeName} />
         ) : (
-          <StandardCard theme={theme} parsed={parsed} type={type} />
+          <StandardCard theme={theme} parsed={parsed} type={type} loungeName={loungeName} />
         )}
       </div>
     );
