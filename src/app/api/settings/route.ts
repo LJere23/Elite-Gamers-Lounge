@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db";
+import { requireAdmin } from "@/lib/adminAuth";
 
 const defaults = {
   id: "singleton",
@@ -29,17 +31,18 @@ const defaults = {
   countdownDate: "",
 };
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const authErr = await requireAdmin(request);
+  if (authErr) return authErr;
+
   try {
     const settings = await prisma.loungeSettings.findUnique({
       where: { id: "singleton" },
     });
 
-    if (!settings) {
-      return NextResponse.json(defaults);
-    }
-
-    return NextResponse.json(settings);
+    const base = settings ?? defaults;
+    // Never return the password hash to the client
+    return NextResponse.json({ ...base, adminPassword: "" });
   } catch (error) {
     console.error("GET /api/settings error:", error);
     return NextResponse.json(
@@ -50,16 +53,27 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const authErr = await requireAdmin(request);
+  if (authErr) return authErr;
+
   try {
     const body = await request.json();
 
+    // Hash the password if a new one was provided
+    const updateData = { ...body };
+    if (typeof body.adminPassword === "string" && body.adminPassword.trim()) {
+      updateData.adminPassword = await bcrypt.hash(body.adminPassword, 12);
+    } else {
+      delete updateData.adminPassword;
+    }
+
     const updated = await prisma.loungeSettings.upsert({
       where: { id: "singleton" },
-      update: body,
-      create: { ...defaults, ...body, id: "singleton" },
+      update: updateData,
+      create: { ...defaults, ...updateData, id: "singleton" },
     });
 
-    return NextResponse.json(updated);
+    return NextResponse.json({ ...updated, adminPassword: "" });
   } catch (error) {
     console.error("POST /api/settings error:", error);
     return NextResponse.json(

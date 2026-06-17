@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { put } from "@vercel/blob";
+import { requireAdmin } from "@/lib/adminAuth";
 
+// GET is public — gallery shown on homepage
 export async function GET() {
   try {
     const images = await prisma.galleryImage.findMany({
@@ -14,6 +16,9 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const authErr = await requireAdmin(request);
+  if (authErr) return authErr;
+
   try {
     const formData = await request.formData();
     const file = formData.get("file") as File | null;

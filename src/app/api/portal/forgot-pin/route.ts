@@ -1,11 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { generateSalt, hashPin, validatePinFormat } from "@/lib/pin";
+import { rateLimit, clientIp } from "@/lib/rateLimit";
 
 // POST /api/portal/forgot-pin
 // Body: { identifier, dateOfBirth, newPin, confirmPin }
 // Verifies identity via email/gamerTag + date of birth, then resets PIN.
 export async function POST(request: NextRequest) {
+  // 5 attempts per 15 minutes per IP
+  const rl = rateLimit(`forgot-pin:${clientIp(request)}`, {
+    limit: 5,
+    windowMs: 15 * 60_000,
+  });
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: "Too many attempts. Please wait 15 minutes." },
+      { status: 429 }
+    );
+  }
+
   try {
     const { identifier, dateOfBirth, newPin, confirmPin } = await request.json();
 
@@ -26,7 +39,6 @@ export async function POST(request: NextRequest) {
       where: { OR: [{ email: identifier.trim() }, { gamerTag: identifier.trim() }] },
     });
 
-    // Generic error — don't reveal whether the account exists
     const fail = () =>
       NextResponse.json(
         { error: "We could not verify your identity. Check your details or contact the lounge." },
@@ -42,7 +54,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Compare date only — ignore time component
     const inputDay = new Date(dateOfBirth).toISOString().slice(0, 10);
     const storedDay = player.dateOfBirth.toISOString().slice(0, 10);
 

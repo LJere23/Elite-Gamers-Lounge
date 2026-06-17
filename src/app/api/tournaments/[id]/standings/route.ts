@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { requireAdmin } from "@/lib/adminAuth";
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
+  const authErr = await requireAdmin(request);
+  if (authErr) return authErr;
+
   const { id } = await context.params;
 
   const tournament = await prisma.tournament.findUnique({ where: { id } });

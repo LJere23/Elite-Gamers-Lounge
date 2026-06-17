@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { requireAdmin } from "@/lib/adminAuth";
 
+// GET is public — blog post detail page
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
@@ -21,6 +23,9 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
 ) {
+  const authErr = await requireAdmin(request);
+  if (authErr) return authErr;
+
   try {
     const { slug } = await params;
     const body = await request.json();
@@ -42,10 +47,7 @@ export async function PUT(
         author: body.author ?? existing.author,
         imageUrl: body.imageUrl !== undefined ? body.imageUrl : existing.imageUrl,
         published: nowPublished,
-        publishedAt:
-          nowPublished && !wasPublished
-            ? new Date()
-            : existing.publishedAt,
+        publishedAt: nowPublished && !wasPublished ? new Date() : existing.publishedAt,
       },
     });
 
@@ -56,9 +58,12 @@ export async function PUT(
 }
 
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
 ) {
+  const authErr = await requireAdmin(request);
+  if (authErr) return authErr;
+
   try {
     const { slug } = await params;
     await prisma.blogPost.delete({ where: { slug } });

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { requireAdmin } from "@/lib/adminAuth";
 
 function serializeTournament(t: {
   id: string;
@@ -50,6 +51,9 @@ export async function PATCH(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
+  const authErr = await requireAdmin(request);
+  if (authErr) return authErr;
+
   const { id } = await context.params;
   const updates = await request.json();
 
@@ -72,9 +76,12 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
+  const authErr = await requireAdmin(request);
+  if (authErr) return authErr;
+
   const { id } = await context.params;
 
   const tournament = await prisma.tournament.findUnique({ where: { id } });

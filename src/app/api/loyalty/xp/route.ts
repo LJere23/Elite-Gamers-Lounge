@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { requireAdmin } from "@/lib/adminAuth";
 
 function computeRank(xp: number, visitCount: number): string {
   if (visitCount < 3) return "Villager";
@@ -21,6 +22,9 @@ function getXpMultiplier(tier: string): number {
 }
 
 export async function POST(req: NextRequest) {
+  const authErr = await requireAdmin(req);
+  if (authErr) return authErr;
+
   try {
     const body = await req.json();
     const { playerId, amount, source, jobId, note } = body;

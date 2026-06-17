@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { requireAdmin } from "@/lib/adminAuth";
 
 function slugify(text: string): string {
   return text
@@ -8,6 +9,7 @@ function slugify(text: string): string {
     .replace(/^-|-$/g, "");
 }
 
+// GET is public — blog posts shown on public site
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -24,6 +26,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const authErr = await requireAdmin(request);
+  if (authErr) return authErr;
+
   try {
     const body = await request.json();
     const { title, content, excerpt, author, published, imageUrl } = body;

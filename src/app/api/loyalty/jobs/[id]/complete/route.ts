@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { requireAdmin } from "@/lib/adminAuth";
 
 function computeRank(xp: number, visitCount: number): string {
   if (visitCount < 3) return "Villager";
@@ -24,6 +25,9 @@ export async function POST(
   req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
+  const authErr = await requireAdmin(req);
+  if (authErr) return authErr;
+
   try {
     const { id } = await context.params;
     const body = await req.json();

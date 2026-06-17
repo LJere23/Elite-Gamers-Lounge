@@ -4,6 +4,7 @@ import {
 } from "next/server";
 
 import { prisma } from "@/lib/db";
+import { requireAdmin } from "@/lib/adminAuth";
 
 /*
 |--------------------------------------------------------------------------
@@ -12,11 +13,13 @@ import { prisma } from "@/lib/db";
 */
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   context: {
     params: Promise<{ id: string }>;
   }
 ) {
+  const authErr = await requireAdmin(request);
+  if (authErr) return authErr;
 
   try {
 
@@ -64,6 +67,8 @@ export async function PATCH(
     params: Promise<{ id: string }>;
   }
 ) {
+  const authErr = await requireAdmin(request);
+  if (authErr) return authErr;
 
   try {
 
@@ -107,11 +112,13 @@ export async function PATCH(
 */
 
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   context: {
     params: Promise<{ id: string }>;
   }
 ) {
+  const authErr = await requireAdmin(request);
+  if (authErr) return authErr;
 
   try {
 

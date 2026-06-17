@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { put } from "@vercel/blob";
+import { requireAdmin } from "@/lib/adminAuth";
 
 export async function POST(req: NextRequest) {
+  const authErr = await requireAdmin(req);
+  if (authErr) return authErr;
+
   try {
     const formData = await req.formData();
     const file = formData.get("file") as File | null;

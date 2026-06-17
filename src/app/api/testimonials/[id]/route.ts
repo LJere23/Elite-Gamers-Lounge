@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { requireAdmin } from "@/lib/adminAuth";
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const authErr = await requireAdmin(req);
+  if (authErr) return authErr;
+
   try {
     const { id } = await params;
     const body = await req.json();
@@ -21,7 +25,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const authErr = await requireAdmin(req);
+  if (authErr) return authErr;
+
   try {
     const { id } = await params;
     await prisma.testimonial.delete({ where: { id } });

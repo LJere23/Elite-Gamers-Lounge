@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { requireAdmin } from "@/lib/adminAuth";
 
 function nextPowerOfTwo(n: number) {
   return 2 ** Math.ceil(Math.log2(n));
@@ -110,6 +111,9 @@ export async function PATCH(
   request: NextRequest,
   context: { params: Promise<{ id: string; matchId: string }> }
 ) {
+  const authErr = await requireAdmin(request);
+  if (authErr) return authErr;
+
   const { id, matchId } = await context.params;
   const updates = await request.json();
 

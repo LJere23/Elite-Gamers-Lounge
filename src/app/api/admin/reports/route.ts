@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { requireAdmin } from "@/lib/adminAuth";
 
 function toCSV(rows: Record<string, unknown>[]): string {
   if (rows.length === 0) return "";
@@ -17,6 +18,9 @@ function toCSV(rows: Record<string, unknown>[]): string {
 }
 
 export async function GET(req: NextRequest) {
+  const authErr = await requireAdmin(req);
+  if (authErr) return authErr;
+
   const { searchParams } = new URL(req.url);
   const from   = searchParams.get("from");
   const to     = searchParams.get("to");

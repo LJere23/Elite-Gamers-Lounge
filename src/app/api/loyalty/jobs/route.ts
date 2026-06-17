@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { requireAdmin } from "@/lib/adminAuth";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const authErr = await requireAdmin(request);
+  if (authErr) return authErr;
+
   try {
     const jobs = await prisma.job.findMany({
       where: { active: true },
@@ -15,6 +19,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const authErr = await requireAdmin(req);
+  if (authErr) return authErr;
+
   try {
     const body = await req.json();
     const { name, description, xpReward, active, jobType } = body;

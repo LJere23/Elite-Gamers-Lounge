@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { requireAdmin } from "@/lib/adminAuth";
 
 type SessionRow = Prisma.SessionGetPayload<Record<string, never>>;
 type WifiRow    = Prisma.WifiSessionGetPayload<Record<string, never>>;
@@ -19,6 +20,9 @@ function periodStart(period: string): Date | null {
 }
 
 export async function GET(req: NextRequest) {
+  const authErr = await requireAdmin(req);
+  if (authErr) return authErr;
+
   try {
     const { searchParams } = new URL(req.url);
     const period = searchParams.get("period") || "all";

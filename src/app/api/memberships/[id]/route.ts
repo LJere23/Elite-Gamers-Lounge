@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { requireAdmin } from "@/lib/adminAuth";
 
 export async function GET(
   _request: NextRequest,
@@ -19,6 +20,9 @@ export async function PATCH(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
+  const authErr = await requireAdmin(request);
+  if (authErr) return authErr;
+
   const { id } = await context.params;
   const body = await request.json() as {
     name?: string;
@@ -33,18 +37,18 @@ export async function PATCH(
     data.perks = JSON.stringify(body.perks);
   }
 
-  const plan = await prisma.membershipPlan.update({
-    where: { id },
-    data,
-  });
+  const plan = await prisma.membershipPlan.update({ where: { id }, data });
 
   return NextResponse.json({ ...plan, perks: JSON.parse(plan.perks || "[]") });
 }
 
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
+  const authErr = await requireAdmin(request);
+  if (authErr) return authErr;
+
   const { id } = await context.params;
 
   await prisma.membershipPlan.delete({ where: { id } });

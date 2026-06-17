@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { del } from "@vercel/blob";
+import { requireAdmin } from "@/lib/adminAuth";
 
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const authErr = await requireAdmin(request);
+  if (authErr) return authErr;
+
   try {
     const { id } = await params;
     const image = await prisma.galleryImage.findUnique({ where: { id } });
@@ -15,7 +19,6 @@ export async function DELETE(
 
     await prisma.galleryImage.delete({ where: { id } });
 
-    // filename now stores the full blob URL
     if (image.filename.startsWith("https://")) {
       await del(image.filename).catch(() => {});
     }
@@ -30,6 +33,9 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const authErr = await requireAdmin(request);
+  if (authErr) return authErr;
+
   try {
     const { id } = await params;
     const body = await request.json();

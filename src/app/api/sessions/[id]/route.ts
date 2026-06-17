@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { requireAdmin } from "@/lib/adminAuth";
 
 function computeRank(xp: number, visitCount: number): string {
   if (visitCount < 3) return "Villager";
@@ -20,6 +21,7 @@ function getXpMultiplier(tier: string): number {
   return 1.0;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function serializeSession(session: any) {
   return {
     ...session,
@@ -29,48 +31,33 @@ function serializeSession(session: any) {
   };
 }
 
-/*
-|--------------------------------------------------------------------------
-| PATCH
-|--------------------------------------------------------------------------
-*/
-
 export async function PATCH(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
+  const authErr = await requireAdmin(request);
+  if (authErr) return authErr;
+
   const { id } = await context.params;
   const body = await request.json();
 
-  // 1. Get session
   const session = await prisma.session.findUnique({ where: { id } });
-
-  // 2. Not found
   if (!session) {
     return NextResponse.json({ error: "Session not found" }, { status: 404 });
   }
 
-  // Build update data — convert date strings if present
   const data: Record<string, unknown> = { ...body };
   if (typeof data.startTime === "string") data.startTime = new Date(data.startTime);
   if (typeof data.endTime === "string") data.endTime = new Date(data.endTime);
 
-  // 3. Update session
-  const updatedSession = await prisma.session.update({
-    where: { id },
-    data,
-  });
+  const updatedSession = await prisma.session.update({ where: { id }, data });
 
-  // 4. If ending the session
   if (body.status === "ENDED") {
-
-    // Release device
     await prisma.device.update({
       where: { id: session.deviceId },
       data: { status: "available", currentSessionId: null },
     });
 
-    // Create notification
     await prisma.notification.create({
       data: {
         message: `${session.playerName} finished playing on ${session.deviceName}`,
@@ -78,35 +65,23 @@ export async function PATCH(
       },
     });
 
-    // Find player by name
     const player = await prisma.player.findFirst({
       where: { name: session.playerName },
     });
 
     if (player) {
       const newVisitCount = player.visitCount + 1;
-
-      // Award 1 XP (with tier multiplier, floored)
       const multiplier = getXpMultiplier(player.membershipTier);
       const xpAwarded = Math.floor(1 * multiplier);
       const newXp = player.xp + xpAwarded;
-
-      // Recompute rank
       const oldRank = player.rank;
       const newRank = computeRank(newXp, newVisitCount);
 
-      // Update player
       await prisma.player.update({
         where: { id: player.id },
-        data: {
-          visitCount: newVisitCount,
-          lastVisitAt: new Date(),
-          xp: newXp,
-          rank: newRank,
-        },
+        data: { visitCount: newVisitCount, lastVisitAt: new Date(), xp: newXp, rank: newRank },
       });
 
-      // Log XP to ledger
       await prisma.xpLedger.create({
         data: {
           playerId: player.id,
@@ -117,22 +92,9 @@ export async function PATCH(
         },
       });
 
-      // Announce rank-up if rank improved
       if (newRank !== oldRank) {
-        const rankOrder = [
-          "Villager",
-          "Adventurer",
-          "F Rank",
-          "E Rank",
-          "D Rank",
-          "C Rank",
-          "B Rank",
-          "A Rank",
-          "S Rank",
-        ];
-        const oldIndex = rankOrder.indexOf(oldRank);
-        const newIndex = rankOrder.indexOf(newRank);
-        if (newIndex > oldIndex) {
+        const rankOrder = ["Villager", "Adventurer", "F Rank", "E Rank", "D Rank", "C Rank", "B Rank", "A Rank", "S Rank"];
+        if (rankOrder.indexOf(newRank) > rankOrder.indexOf(oldRank)) {
           await prisma.announcement.create({
             data: {
               message: `${player.name} (${player.gamerTag}) has ranked up to ${newRank}!`,
@@ -145,29 +107,23 @@ export async function PATCH(
     }
   }
 
-  // 5. Return updated session with ISO date strings
   return NextResponse.json(serializeSession(updatedSession));
 }
-
-/*
-|--------------------------------------------------------------------------
-| DELETE
-|--------------------------------------------------------------------------
-*/
 
 export async function DELETE(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
+  const authErr = await requireAdmin(request);
+  if (authErr) return authErr;
+
   const { id } = await context.params;
 
   const session = await prisma.session.findUnique({ where: { id } });
-
   if (!session) {
     return NextResponse.json({ error: "Session not found" }, { status: 404 });
   }
 
-  // Release device if session exists
   await prisma.device.update({
     where: { id: session.deviceId },
     data: { status: "available", currentSessionId: null },

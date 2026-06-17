@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { requireAdmin } from "@/lib/adminAuth";
 
 function serializeTournament(t: {
   id: string;
@@ -39,6 +40,9 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const authErr = await requireAdmin(request);
+  if (authErr) return authErr;
+
   const body = await request.json();
 
   const tournament = await prisma.tournament.create({

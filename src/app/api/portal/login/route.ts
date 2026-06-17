@@ -1,8 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { verifyPin } from "@/lib/pin";
+import { rateLimit, clientIp } from "@/lib/rateLimit";
 
 export async function POST(request: NextRequest) {
+  // 10 attempts per 15 minutes per IP
+  const rl = rateLimit(`portal-login:${clientIp(request)}`, {
+    limit: 10,
+    windowMs: 15 * 60_000,
+  });
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: "Too many login attempts. Please wait 15 minutes." },
+      { status: 429 }
+    );
+  }
+
   try {
     const body = await request.json();
     const { identifier, pin } = body;
@@ -18,7 +31,6 @@ export async function POST(request: NextRequest) {
       where: { OR: [{ email: identifier }, { gamerTag: identifier }] },
     });
 
-    // Same error for both "not found" and "wrong PIN" to avoid enumeration
     const invalid = () =>
       NextResponse.json(
         { error: "Incorrect GamerTag / email or PIN." },
@@ -33,8 +45,9 @@ export async function POST(request: NextRequest) {
     response.cookies.set("portal_player_id", player.id, {
       httpOnly: true,
       path: "/",
-      maxAge: 60 * 60 * 24 * 7, // 7 days
+      maxAge: 60 * 60 * 24 * 7,
       sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
     });
     return response;
   } catch {

@@ -2,8 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { generateSalt, hashPin, validatePinFormat } from "@/lib/pin";
 import { tryAwardJob } from "@/lib/jobs";
+import { requireAdmin } from "@/lib/adminAuth";
+import { rateLimit, clientIp } from "@/lib/rateLimit";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const authErr = await requireAdmin(request);
+  if (authErr) return authErr;
+
   const players = await prisma.player.findMany({ orderBy: { joinedAt: "desc" } });
 
   const serialized = players.map((player) => ({
@@ -24,6 +29,15 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  // 5 registrations per hour per IP
+  const rl = rateLimit(`register:${clientIp(request)}`, { limit: 5, windowMs: 60 * 60_000 });
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: "Too many registration attempts. Please try again later." },
+      { status: 429 }
+    );
+  }
+
   const body = await request.json();
 
   const {

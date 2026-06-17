@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { requireAdmin } from "@/lib/adminAuth";
 
 function nextPowerOfTwo(n: number) {
   return 2 ** Math.ceil(Math.log2(n));
@@ -19,6 +20,9 @@ function getScoreThreshold(scoringSystem: string) {
 }
 
 export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const authErr = await requireAdmin(request);
+  if (authErr) return authErr;
+
   const { id } = await context.params;
 
   const matches = await prisma.tournamentMatch.findMany({
@@ -36,6 +40,9 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
 }
 
 export async function POST(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const authErr = await requireAdmin(request);
+  if (authErr) return authErr;
+
   const { id } = await context.params;
 
   const tournament = await prisma.tournament.findUnique({ where: { id } });

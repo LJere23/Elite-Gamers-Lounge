@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { requireAdmin } from "@/lib/adminAuth";
 
+// GET is public — testimonials shown on homepage
 export async function GET() {
   try {
     const testimonials = await prisma.testimonial.findMany({
@@ -14,10 +16,16 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const authErr = await requireAdmin(req);
+  if (authErr) return authErr;
+
   try {
     const { name, role, message, sortOrder } = await req.json();
     if (!name || !role || !message) {
-      return NextResponse.json({ error: "name, role, and message are required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "name, role, and message are required" },
+        { status: 400 }
+      );
     }
     const testimonial = await prisma.testimonial.create({
       data: { name, role, message, sortOrder: sortOrder ?? 0 },
