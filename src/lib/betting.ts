@@ -197,6 +197,13 @@ export async function settleBettingPool(
   const allStakes = await prisma.bettingStake.findMany({
     where: { bettingPoolId },
   });
+
+  // Guard: refund instead of settling a pool with fewer than 2 distinct stakers
+  const uniqueStakers = new Set(allStakes.map((s) => s.playerId)).size;
+  if (uniqueStakers < 2) {
+    await refundBettingPool(bettingPoolId, "Pool did not attract enough participants to settle fairly.");
+    return;
+  }
   const poolTotal       = allStakes.reduce((s, x) => s + x.amountCxp, 0);
   const houseCutAmount  = Math.floor(poolTotal * (pool.houseCutPercent / 100));
   const distributable   = poolTotal - houseCutAmount;
@@ -333,7 +340,7 @@ export async function triggerMatchSettlement(matchId: string): Promise<void> {
     if (!match) return;
 
     const pools = await prisma.bettingPool.findMany({
-      where: { matchId, status: "open", scopeType: "single_match" },
+      where: { matchId, status: { in: ["open", "closed"] }, scopeType: "single_match" },
       include: { outcomes: true },
     });
 
@@ -384,7 +391,7 @@ export async function triggerTournamentSettlement(tournamentId: string): Promise
     if (!tournament?.winnerId) return;
 
     const pools = await prisma.bettingPool.findMany({
-      where: { tournamentId, status: "open", scopeType: "full_tournament" },
+      where: { tournamentId, status: { in: ["open", "closed"] }, scopeType: "full_tournament" },
       include: { outcomes: true },
     });
 
