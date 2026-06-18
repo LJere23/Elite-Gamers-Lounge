@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
 import PlayerAvatar from "@/components/ui/PlayerAvatar";
 import { Player, Tournament, TournamentEntry, TournamentMatch } from "@/types/admin";
@@ -286,9 +287,15 @@ export default function AdminTournamentDetailPage() {
           title={tournament.name}
           description={`${tournament.game} • ${tournament.category} • ${FORMAT_LABEL[fmt] ?? fmt}`}
         />
-        <span className={`inline-flex items-center rounded-full border px-4 py-1.5 text-sm font-bold ${STATUS_BADGE[tournament.status] ?? "bg-white/5 text-white border-white/10"}`}>
-          {tournament.status.toUpperCase()}
-        </span>
+        <div className="flex items-center gap-3 flex-wrap">
+          <Link href="/admin/betting"
+            className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 px-4 py-1.5 text-sm font-bold text-amber-400 transition">
+            🔮 Oracle Pool
+          </Link>
+          <span className={`inline-flex items-center rounded-full border px-4 py-1.5 text-sm font-bold ${STATUS_BADGE[tournament.status] ?? "bg-white/5 text-white border-white/10"}`}>
+            {tournament.status.toUpperCase()}
+          </span>
+        </div>
       </div>
 
       {/* WINNER BANNER */}

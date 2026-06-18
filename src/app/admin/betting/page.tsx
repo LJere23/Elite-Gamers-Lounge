@@ -103,7 +103,7 @@ export default function AdminBettingPage() {
 
   // CXP adjustment
   const [cxpModal, setCxpModal]   = useState(false);
-  const [cxpForm, setCxpForm]     = useState({ playerId: "", amount: 0, reason: "", sourceType: "admin_adjustment" });
+  const [cxpForm, setCxpForm]     = useState({ gamerTag: "", amount: 0, reason: "", sourceType: "admin_adjustment" });
   const [cxpMsg, setCxpMsg]       = useState("");
 
   const [msg, setMsg] = useState("");
@@ -220,7 +220,7 @@ export default function AdminBettingPage() {
     const res = await fetch(`/api/admin/betting/pools/${accessModal.id}/access`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ playerId: accessPlayer }),
+      body: JSON.stringify({ gamerTag: accessPlayer }),
     });
     const d = await res.json();
     if (!res.ok) { setAccessError(d.error ?? "Failed."); setLoading(false); return; }
@@ -249,7 +249,7 @@ export default function AdminBettingPage() {
     });
     const d = await res.json();
     setCxpMsg(res.ok ? `Done. New balance: ${d.newBalance} C-XP.` : (d.error ?? "Failed."));
-    if (res.ok) setCxpForm({ playerId: "", amount: 0, reason: "", sourceType: "admin_adjustment" });
+    if (res.ok) setCxpForm({ gamerTag: "", amount: 0, reason: "", sourceType: "admin_adjustment" });
     setLoading(false);
   }
 
@@ -534,7 +534,7 @@ export default function AdminBettingPage() {
 
             <form onSubmit={handleAddAccess} className="flex gap-2">
               <input value={accessPlayer} onChange={(e) => setAccessPlayer(e.target.value)}
-                placeholder="Player ID" required
+                placeholder="@gamerTag" required
                 className="flex-1 rounded-3xl border border-white/10 bg-black/40 px-4 py-2.5 text-white text-sm outline-none focus:border-cyan-400" />
               <button type="submit" disabled={loading || !accessPlayer.trim()}
                 className="rounded-3xl bg-cyan-500 hover:bg-cyan-400 disabled:opacity-60 text-black font-bold text-sm px-5 py-2.5 transition">
@@ -574,9 +574,9 @@ export default function AdminBettingPage() {
             </div>
             <form onSubmit={handleCxpAdjust} className="space-y-4">
               <label className="block text-sm font-semibold text-slate-100">
-                Player ID
-                <input value={cxpForm.playerId} onChange={(e) => setCxpForm((f) => ({ ...f, playerId: e.target.value }))}
-                  required placeholder="Player UUID" className={inputCls} />
+                GamerTag
+                <input value={cxpForm.gamerTag} onChange={(e) => setCxpForm((f) => ({ ...f, gamerTag: e.target.value }))}
+                  required placeholder="@gamerTag" className={inputCls} />
               </label>
               <label className="block text-sm font-semibold text-slate-100">
                 Amount (positive = credit, negative = debit)
@@ -597,7 +597,7 @@ export default function AdminBettingPage() {
                 <input value={cxpForm.reason} onChange={(e) => setCxpForm((f) => ({ ...f, reason: e.target.value }))}
                   required placeholder="e.g. Won the weekly trivia challenge" className={inputCls} />
               </label>
-              <button type="submit" disabled={loading || !cxpForm.playerId || !cxpForm.reason || cxpForm.amount === 0}
+              <button type="submit" disabled={loading || !cxpForm.gamerTag || !cxpForm.reason || cxpForm.amount === 0}
                 className="w-full rounded-3xl bg-purple-600 hover:bg-purple-500 disabled:opacity-60 text-white font-bold text-sm py-3 transition">
                 Apply
               </button>

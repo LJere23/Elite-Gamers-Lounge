@@ -6,10 +6,10 @@ export async function POST(request: NextRequest) {
   const err = await requireAdmin(request);
   if (err) return err;
 
-  const { playerId, amount, sourceType, reason } = await request.json();
+  const { gamerTag, amount, sourceType, reason } = await request.json();
 
-  if (!playerId || typeof amount !== "number") {
-    return NextResponse.json({ error: "playerId and amount (integer) are required" }, { status: 400 });
+  if (!gamerTag || typeof amount !== "number") {
+    return NextResponse.json({ error: "gamerTag and amount (integer) are required" }, { status: 400 });
   }
   if (!reason || !reason.trim()) {
     return NextResponse.json({ error: "A reason is required" }, { status: 400 });
@@ -18,11 +18,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Amount must be a non-zero integer" }, { status: 400 });
   }
 
-  const player = await prisma.player.findUnique({
-    where: { id: playerId },
-    select: { id: true, cxpBalance: true, gamerTag: true },
+  const player = await prisma.player.findFirst({
+    where: { gamerTag: { equals: (gamerTag as string).replace(/^@/, ""), mode: "insensitive" } },
+    select: { id: true, cxpBalance: true, gamerTag: true, name: true },
   });
-  if (!player) return NextResponse.json({ error: "Player not found" }, { status: 404 });
+  if (!player) return NextResponse.json({ error: `No player found with gamerTag @${gamerTag}` }, { status: 404 });
+
+  const playerId = player.id;
 
   const newBalance = player.cxpBalance + amount;
   if (newBalance < 0) {

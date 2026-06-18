@@ -28,29 +28,31 @@ export async function POST(
   if (err) return err;
 
   const { id: bettingPoolId } = await params;
-  const { playerId } = await request.json();
+  const { gamerTag } = await request.json();
 
-  if (!playerId) {
-    return NextResponse.json({ error: "playerId is required" }, { status: 400 });
+  if (!gamerTag || typeof gamerTag !== "string") {
+    return NextResponse.json({ error: "gamerTag is required" }, { status: 400 });
   }
 
   const pool = await prisma.bettingPool.findUnique({ where: { id: bettingPoolId } });
   if (!pool) return NextResponse.json({ error: "Pool not found" }, { status: 404 });
 
+  const player = await prisma.player.findFirst({
+    where: { gamerTag: { equals: gamerTag.replace(/^@/, ""), mode: "insensitive" } },
+    select: { id: true, gamerTag: true, name: true },
+  });
+  if (!player) return NextResponse.json({ error: `No player found with gamerTag @${gamerTag}` }, { status: 404 });
+
   // Block competitors from being added to the access list entirely
-  const competitor = await isPlayerCompetitor(playerId, bettingPoolId);
+  const competitor = await isPlayerCompetitor(player.id, bettingPoolId);
   if (competitor) {
     return NextResponse.json(
-      { error: "This player is a competitor in the linked tournament or match. Competitors cannot be added to the betting access list." },
+      { error: `@${player.gamerTag} is a competitor in this pool's tournament or match and cannot be invited.` },
       { status: 422 }
     );
   }
 
-  const player = await prisma.player.findUnique({
-    where: { id: playerId },
-    select: { id: true, gamerTag: true, name: true },
-  });
-  if (!player) return NextResponse.json({ error: "Player not found" }, { status: 404 });
+  const playerId = player.id;
 
   try {
     const access = await prisma.bettingPoolAccess.create({
