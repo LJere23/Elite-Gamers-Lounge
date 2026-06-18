@@ -51,10 +51,10 @@ export async function GET(req: NextRequest) {
         }),
       ]);
 
-    // When a period filter is active, fetch all-time data for the revenueByPeriod breakdown
-    let allSessions: SessionRow[]   = [];
-    let allWifi: WifiRow[]          = [];
-    let allTournaments: TourneyRow[] = [];
+    // For revenueByPeriod breakdown we always need all-time data regardless of the active filter
+    let allSessions: SessionRow[]    = sessions;
+    let allWifi: WifiRow[]           = wifiSessions;
+    let allTournaments: TourneyRow[] = completedTournaments;
     if (since) {
       [allSessions, allWifi, allTournaments] = await Promise.all([
         prisma.session.findMany(),
@@ -62,10 +62,6 @@ export async function GET(req: NextRequest) {
         prisma.tournament.findMany({ where: { status: "completed" }, include: tourneyInclude }),
       ]);
     }
-
-    const effectiveAllSessions = since ? allSessions : sessions;
-    const effectiveAllWifi     = since ? allWifi     : wifiSessions;
-    const effectiveAllTourneys = since ? allTournaments : completedTournaments;
 
     // Auto-expire stale ACTIVE sessions
     const expired = sessions.filter(
@@ -102,15 +98,15 @@ export async function GET(req: NextRequest) {
 
     const totalRevenueUsd = sessionRevenue + wifiRevenue + tournamentRevenue + membershipRevenue;
 
-    // Revenue by period (all 4 streams)
+    // Revenue by period (all 4 streams) — always uses all-time data for comparison
     function periodRevenue(from: Date) {
-      const sess  = effectiveAllSessions
+      const sess  = allSessions
         .filter((s) => new Date(s.createdAt) >= from)
         .reduce((a, s) => a + (s.totalPrice || 0), 0);
-      const wifi  = effectiveAllWifi
+      const wifi  = allWifi
         .filter((w) => new Date(w.startedAt) >= from)
         .reduce((a, w) => a + (w.priceUsd || 0), 0);
-      const tourny = effectiveAllTourneys
+      const tourny = allTournaments
         .filter((t) => t.completedAt && new Date(t.completedAt) >= from)
         .reduce((a, t) => a + (t.entryFee || 0) * t._count.tournamentEntries, 0);
       return { sessions: sess, wifi, tournaments: tourny, total: sess + wifi + tourny };
@@ -121,9 +117,9 @@ export async function GET(req: NextRequest) {
       monthly: periodRevenue(now30),
     };
 
-    // Revenue by station (dollars)
+    // Revenue by station — period-scoped
     const stationRevMap: Record<string, { revenue: number; sessions: number; hours: number }> = {};
-    for (const s of effectiveAllSessions) {
+    for (const s of sessions) {
       if (!s.deviceName) continue;
       if (!stationRevMap[s.deviceName]) stationRevMap[s.deviceName] = { revenue: 0, sessions: 0, hours: 0 };
       stationRevMap[s.deviceName].revenue  += s.totalPrice    || 0;
@@ -135,9 +131,9 @@ export async function GET(req: NextRequest) {
       .slice(0, 10)
       .map(([station, d]) => ({ station, ...d }));
 
-    // Revenue by game (dollars)
+    // Revenue by game — period-scoped
     const gameRevMap: Record<string, { revenue: number; sessions: number }> = {};
-    for (const s of effectiveAllSessions) {
+    for (const s of sessions) {
       if (!s.game) continue;
       if (!gameRevMap[s.game]) gameRevMap[s.game] = { revenue: 0, sessions: 0 };
       gameRevMap[s.game].revenue  += s.totalPrice || 0;
@@ -148,9 +144,9 @@ export async function GET(req: NextRequest) {
       .slice(0, 10)
       .map(([game, d]) => ({ game, ...d }));
 
-    // Top spenders
+    // Top spenders — period-scoped
     const spenderMap: Record<string, { name: string; spend: number; sessions: number }> = {};
-    for (const s of effectiveAllSessions) {
+    for (const s of sessions) {
       if (!s.playerName) continue;
       if (!spenderMap[s.playerName]) spenderMap[s.playerName] = { name: s.playerName, spend: 0, sessions: 0 };
       spenderMap[s.playerName].spend    += s.totalPrice || 0;
@@ -160,8 +156,8 @@ export async function GET(req: NextRequest) {
       .sort((a, b) => b.spend - a.spend)
       .slice(0, 5);
 
-    // Best tournaments by revenue
-    const bestTournaments = effectiveAllTourneys
+    // Best tournaments — period-scoped
+    const bestTournaments = completedTournaments
       .map((t) => ({
         id:       t.id,
         name:     t.name,

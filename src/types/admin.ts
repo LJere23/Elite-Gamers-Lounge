@@ -407,6 +407,7 @@ export interface AnalyticsPayload {
     sessions: number;
     memberships: number;
     wifi: number;
+    tournaments?: number;
   };
 
   /*
