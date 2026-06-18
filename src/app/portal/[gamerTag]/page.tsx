@@ -115,6 +115,29 @@ interface PortalData {
   perkStatus: PerkStatus;
 }
 
+interface OddsRow {
+  outcomeId: string;
+  label: string;
+  outcomeType: string;
+  totalStakedCxp: number;
+  payoutMultiplier: number | null;
+}
+
+interface OraclePool {
+  id: string;
+  title: string;
+  tournamentName: string;
+  scopeType: string;
+  closesAt: string;
+  allowDraw: boolean;
+  odds: OddsRow[];
+  myStake: { outcomeId: string; label: string; amountCxp: number } | null;
+  matchContext: {
+    playerA: { name: string; recentResults: string[] };
+    playerB: { name: string; recentResults: string[] };
+  } | null;
+}
+
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
 const RANK_THRESHOLDS: { rank: string; minXp: number }[] = [
@@ -366,6 +389,14 @@ export default function GuildCardPage() {
   const [challenges, setChallenges]             = useState<Challenge[]>([]);
   const [challengeWeekKey, setChallengeWeekKey] = useState("");
 
+  // Oracle Pool state
+  const [oraclePools, setOraclePools]         = useState<OraclePool[]>([]);
+  const [oracleEnabled, setOracleEnabled]     = useState(false);
+  const [cxpBalance, setCxpBalance]           = useState(0);
+  const [stakeInputs, setStakeInputs]         = useState<Record<string, { outcomeId: string; amount: string }>>({});
+  const [stakeErrors, setStakeErrors]         = useState<Record<string, string>>({});
+  const [stakeSubmitting, setStakeSubmitting] = useState<Record<string, boolean>>({});
+
   useEffect(() => {
     async function loadData() {
       try {
@@ -391,11 +422,20 @@ export default function GuildCardPage() {
           if (notifs.length > 0) { setPendingNotifications(notifs); setShowNotifications(true); }
         }
 
-        const challengesRes = await fetch(`/api/portal/${json.player.gamerTag}/challenges`);
+        const [challengesRes, bettingRes] = await Promise.all([
+          fetch(`/api/portal/${json.player.gamerTag}/challenges`),
+          fetch("/api/portal/betting"),
+        ]);
         if (challengesRes.ok) {
           const cd = await challengesRes.json();
           setChallenges(cd.challenges ?? []);
           setChallengeWeekKey(cd.weekKey ?? "");
+        }
+        if (bettingRes.ok) {
+          const bd = await bettingRes.json();
+          setOracleEnabled(bd.oracleEnabled ?? false);
+          setOraclePools(bd.pools ?? []);
+          setCxpBalance(bd.cxpBalance ?? 0);
         }
       } catch {
         router.replace("/portal");
@@ -494,6 +534,47 @@ export default function GuildCardPage() {
       setTimeout(() => { setShowPinForm(false); setPinStatus("idle"); }, 2000);
     } catch {
       setPinError("Connection error."); setPinStatus("error");
+    }
+  }
+
+  async function handlePlaceBet(poolId: string) {
+    const input = stakeInputs[poolId];
+    if (!input?.outcomeId || !input.amount) {
+      setStakeErrors((e) => ({ ...e, [poolId]: "Select an outcome and enter an amount." }));
+      return;
+    }
+    const amount = parseInt(input.amount, 10);
+    if (!amount || amount <= 0) {
+      setStakeErrors((e) => ({ ...e, [poolId]: "Enter a valid C-XP amount." }));
+      return;
+    }
+    if (amount > cxpBalance) {
+      setStakeErrors((e) => ({ ...e, [poolId]: `You only have ${cxpBalance} C-XP.` }));
+      return;
+    }
+    setStakeSubmitting((s) => ({ ...s, [poolId]: true }));
+    setStakeErrors((e) => ({ ...e, [poolId]: "" }));
+    try {
+      const res = await fetch(`/api/portal/betting/${poolId}/stake`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ outcomeId: input.outcomeId, amountCxp: amount }),
+      });
+      const d = await res.json();
+      if (!res.ok) {
+        setStakeErrors((e) => ({ ...e, [poolId]: d.error ?? "Failed to place bet." }));
+        return;
+      }
+      // Refresh pools and balance
+      const bettingRes = await fetch("/api/portal/betting");
+      if (bettingRes.ok) {
+        const bd = await bettingRes.json();
+        setOraclePools(bd.pools ?? []);
+        setCxpBalance(bd.cxpBalance ?? 0);
+      }
+      setStakeInputs((s) => ({ ...s, [poolId]: { outcomeId: "", amount: "" } }));
+    } finally {
+      setStakeSubmitting((s) => ({ ...s, [poolId]: false }));
     }
   }
 
@@ -894,6 +975,140 @@ export default function GuildCardPage() {
                 );
               })}
             </div>
+          </div>
+        )}
+
+        {/* ── Oracle Pool ─────────────────────────────────────────────── */}
+        {oracleEnabled && oraclePools.length > 0 && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.24em] text-amber-400/70 mb-0.5">The Oracle Pool</p>
+                <p className="text-lg font-black text-amber-300">C-XP Betting</p>
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] text-purple-400/60 uppercase tracking-wider">Your Balance</p>
+                <p className="text-lg font-black text-amber-400">{cxpBalance.toLocaleString()} <span className="text-xs font-semibold">C-XP</span></p>
+                <p className="text-[10px] text-purple-400/50">separate from Guild XP</p>
+              </div>
+            </div>
+
+            {oraclePools.map((pool) => {
+              const myStake   = pool.myStake;
+              const input     = stakeInputs[pool.id] ?? { outcomeId: "", amount: "" };
+              const err       = stakeErrors[pool.id] ?? "";
+              const submitting = stakeSubmitting[pool.id] ?? false;
+              const totalStaked = pool.odds.reduce((s, o) => s + o.totalStakedCxp, 0);
+
+              return (
+                <div key={pool.id} className="bg-[#1a1440]/80 rounded-3xl border border-amber-500/20 p-5">
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <div>
+                      <p className="text-sm font-black text-white">{pool.title}</p>
+                      <p className="text-xs text-purple-400/60">{pool.tournamentName}</p>
+                      <p className="text-[11px] text-amber-400/60 mt-0.5">
+                        Closes {new Date(pool.closesAt).toLocaleString()} · {totalStaked} C-XP in pool
+                      </p>
+                    </div>
+                    {myStake && (
+                      <div className="text-right shrink-0">
+                        <p className="text-[10px] text-purple-400/60 uppercase tracking-wider">Your Bet</p>
+                        <p className="text-xs font-black text-amber-300">{myStake.label}</p>
+                        <p className="text-[11px] text-amber-400">{myStake.amountCxp} C-XP</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Match context for single_match */}
+                  {pool.matchContext && (
+                    <div className="grid grid-cols-2 gap-2 mb-4">
+                      {([pool.matchContext.playerA, pool.matchContext.playerB] as { name: string; recentResults: string[] }[]).map((p) => (
+                        <div key={p.name} className="bg-purple-950/40 rounded-2xl px-3 py-2 border border-purple-700/20">
+                          <p className="text-[11px] font-bold text-purple-300 truncate">{p.name}</p>
+                          <div className="flex gap-1 mt-1">
+                            {p.recentResults.length === 0
+                              ? <span className="text-[10px] text-purple-400/40">No recent matches</span>
+                              : p.recentResults.map((r, i) => (
+                                  <span key={i} className={`text-[10px] font-black px-1 rounded ${r === "W" ? "text-emerald-400" : r === "D" ? "text-amber-400" : "text-rose-400"}`}>{r}</span>
+                                ))
+                            }
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Odds grid */}
+                  <div className="space-y-2 mb-4">
+                    {pool.odds.map((o) => {
+                      const selected = input.outcomeId === o.outcomeId;
+                      const alreadyBetHere = myStake?.outcomeId === o.outcomeId;
+                      return (
+                        <button
+                          key={o.outcomeId}
+                          disabled={!!myStake}
+                          onClick={() => setStakeInputs((s) => ({ ...s, [pool.id]: { ...input, outcomeId: o.outcomeId } }))}
+                          className={`w-full flex items-center justify-between rounded-2xl border px-4 py-3 transition text-left ${
+                            alreadyBetHere
+                              ? "border-amber-400/60 bg-amber-900/20"
+                              : selected
+                              ? "border-purple-400/60 bg-purple-900/30"
+                              : "border-purple-700/20 bg-purple-950/20 hover:border-purple-500/40"
+                          } ${myStake ? "cursor-default" : "cursor-pointer"}`}
+                        >
+                          <span className={`text-sm font-bold ${o.outcomeType === "draw" ? "text-amber-300" : "text-white"}`}>{o.label}</span>
+                          <div className="text-right shrink-0 ml-4">
+                            <p className="text-sm font-black text-purple-300">
+                              {o.payoutMultiplier !== null ? `${o.payoutMultiplier}×` : "—"}
+                            </p>
+                            <p className="text-[10px] text-purple-400/50">{o.totalStakedCxp} C-XP</p>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Bet form — only shown if player hasn't bet yet */}
+                  {!myStake && (
+                    <div className="space-y-3">
+                      <div className="flex gap-2">
+                        <input
+                          type="number" min="1" max={cxpBalance} placeholder="C-XP amount"
+                          value={input.amount}
+                          onChange={(e) => setStakeInputs((s) => ({ ...s, [pool.id]: { ...input, amount: e.target.value } }))}
+                          className="flex-1 rounded-2xl bg-purple-950/40 border border-purple-700/30 focus:border-amber-400/60 focus:outline-none px-4 py-2.5 text-white text-sm placeholder-purple-500/50 transition-colors"
+                        />
+                        <button
+                          onClick={() => setStakeInputs((s) => ({ ...s, [pool.id]: { ...input, amount: String(cxpBalance) } }))}
+                          className="rounded-2xl border border-amber-500/30 bg-amber-900/20 px-3 py-2 text-xs font-bold text-amber-400 hover:bg-amber-900/40 transition"
+                        >
+                          Max
+                        </button>
+                      </div>
+                      {err && <p className="text-xs text-rose-400 bg-rose-950/30 rounded-xl px-3 py-2 border border-rose-500/20">{err}</p>}
+                      <button
+                        onClick={() => handlePlaceBet(pool.id)}
+                        disabled={submitting || !input.outcomeId || !input.amount}
+                        className="w-full rounded-2xl bg-amber-500 hover:bg-amber-400 disabled:opacity-50 disabled:cursor-not-allowed text-black font-black text-sm py-3 transition"
+                      >
+                        {submitting ? "Placing…" : "Place Bet"}
+                      </button>
+                      <p className="text-[10px] text-purple-400/40 text-center">Bets are final. You can only bet once per pool. Odds update live.</p>
+                    </div>
+                  )}
+
+                  {myStake && (
+                    <p className="text-xs text-amber-400/60 text-center">
+                      Your {myStake.amountCxp} C-XP is locked in on <span className="font-bold text-amber-300">{myStake.label}</span>. Good luck, adventurer.
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+
+            <p className="text-[11px] text-purple-400/30 text-center px-4">
+              C-XP is earned through missions and Oracle Pool wins. It has no cash value and does not affect your Guild rank.
+            </p>
           </div>
         )}
 

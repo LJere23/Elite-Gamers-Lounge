@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/adminAuth";
+import { triggerTournamentSettlement } from "@/lib/betting";
 
 function computeRank(xp: number, visitCount: number): string {
   if (visitCount < 3) return "Villager";
@@ -162,7 +163,10 @@ export async function POST(
     // XP award is best-effort; do not fail the request
   }
 
-  // 9. Return updated tournament
+  // 9. Trigger betting settlement (fire-and-forget)
+  triggerTournamentSettlement(id).catch((e) => console.error("[betting-hook/fastest_lap]", e));
+
+  // 10. Return updated tournament
   return NextResponse.json({
     ...updated,
     startAt: updated.startAt.toISOString(),

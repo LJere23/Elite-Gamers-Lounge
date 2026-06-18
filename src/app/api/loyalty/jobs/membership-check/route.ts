@@ -4,6 +4,7 @@ import { runMembershipExpiryCheck } from "@/lib/membershipExpiry";
 import { revokeExpiredFounderPriceLocks } from "@/lib/founderService";
 import { runBirthdayCheck } from "@/lib/birthdayCheck";
 import { runTournamentLifecycle } from "@/lib/tournamentScheduler";
+import { autoRefundExpiredPools } from "@/lib/betting";
 import { prisma } from "@/lib/db";
 
 async function runInactivityCheck(): Promise<{ notified: number }> {
@@ -54,6 +55,7 @@ async function runAllDailyChecks() {
   ]);
 
   const founderLocksRevoked = await revokeExpiredFounderPriceLocks();
+  await autoRefundExpiredPools().catch((e) => console.error("[daily/oracle-refund]", e));
 
   return {
     ok:                  true,

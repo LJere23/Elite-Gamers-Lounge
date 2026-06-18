@@ -63,12 +63,17 @@ model Player {
   referredBy     Player?  @relation("PlayerReferrals", fields: [referredById], references: [id])
   referrals      Player[] @relation("PlayerReferrals")
 
+  cxpBalance    Int @default(0)
+
   titles             PlayerTitle[]
   xpLedger           XpLedger[]
+  cxpLedger          CxpLedger[]
   jobCompletions     JobCompletion[]
   entries            TournamentEntry[]
   notifications      Notification[]
   challengeProgress  PlayerChallengeProgress[]
+  bettingAccess      BettingPoolAccess[]
+  bettingStakes      BettingStake[]
 
   @@index([membershipTier])
   @@index([rank])
@@ -199,6 +204,7 @@ model Tournament {
 
   tournamentEntries TournamentEntry[]
   matches           TournamentMatch[]
+  bettingPools      BettingPool[]
 }
 
 model TournamentEntry {
@@ -371,6 +377,9 @@ model LoungeSettings {
   doubleXpMultiplier Float     @default(2.0)
   doubleXpUntil      DateTime?
   doubleXpLabel      String    @default("Double XP Event")
+
+  // Oracle Pool
+  oraclePoolEnabled  Boolean   @default(false)
 }
 
 model TournamentTemplate {
@@ -434,4 +443,93 @@ model BlogPost {
   publishedAt DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+}
+
+model CxpLedger {
+  id          String   @id @default(uuid())
+  playerId    String
+  amount      Int      // positive = credit, negative = debit
+  sourceType  String   // "mission" | "bet_stake" | "bet_payout" | "bet_refund" | "house_cut" | "admin_adjustment"
+  sourceLabel String
+  contextId   String?
+  createdAt   DateTime @default(now())
+
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([playerId])
+  @@index([createdAt])
+}
+
+model BettingPool {
+  id                     String    @id @default(uuid())
+  tournamentId           String
+  scopeType              String    // "full_tournament" | "single_match"
+  matchId                String?
+  title                  String
+  status                 String    @default("draft") // "draft"|"open"|"closed"|"settled"|"cancelled"
+  houseCutPercent        Float     @default(20)
+  totalPoolCxp           Int       @default(0)
+  totalHouseCutCollected Int       @default(0)
+  enabled                Boolean   @default(false)
+  closesAt               DateTime
+  settledAt              DateTime?
+  createdAt              DateTime  @default(now())
+
+  tournament Tournament         @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  outcomes   BettingPoolOutcome[]
+  access     BettingPoolAccess[]
+  stakes     BettingStake[]
+
+  @@index([tournamentId])
+  @@index([status])
+  @@index([matchId])
+}
+
+model BettingPoolAccess {
+  id            String   @id @default(uuid())
+  bettingPoolId String
+  playerId      String
+  invitedAt     DateTime @default(now())
+
+  bettingPool BettingPool @relation(fields: [bettingPoolId], references: [id], onDelete: Cascade)
+  player      Player      @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([bettingPoolId, playerId])
+  @@index([bettingPoolId])
+  @@index([playerId])
+}
+
+model BettingPoolOutcome {
+  id               String  @id @default(uuid())
+  bettingPoolId    String
+  label            String
+  outcomeType      String  // "player" | "draw"
+  linkedEntryId    String?
+  linkedPlayerSlot String? // "playerA" | "playerB"
+  totalStakedCxp   Int     @default(0)
+
+  bettingPool BettingPool  @relation(fields: [bettingPoolId], references: [id], onDelete: Cascade)
+  stakes      BettingStake[]
+
+  @@index([bettingPoolId])
+}
+
+model BettingStake {
+  id            String   @id @default(uuid())
+  bettingPoolId String
+  outcomeId     String
+  playerId      String
+  amountCxp     Int
+  placedAt      DateTime @default(now())
+  settled       Boolean  @default(false)
+  payoutCxp     Int?
+
+  bettingPool BettingPool        @relation(fields: [bettingPoolId], references: [id], onDelete: Cascade)
+  outcome     BettingPoolOutcome @relation(fields: [outcomeId], references: [id], onDelete: Cascade)
+  player      Player             @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([bettingPoolId, playerId])
+  @@index([bettingPoolId])
+  @@index([outcomeId])
+  @@index([playerId])
 }

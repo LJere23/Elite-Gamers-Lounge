@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { X, LayoutDashboard, Monitor, Trophy, Users, Wifi, CreditCard, BarChart3, Settings, Gamepad2, Cpu, Star, Megaphone, Image, BookOpen, MessageSquareQuote, FileText, Swords, UserCheck } from "lucide-react";
+import { X, LayoutDashboard, Monitor, Trophy, Users, Wifi, CreditCard, BarChart3, Settings, Gamepad2, Cpu, Star, Megaphone, Image, BookOpen, MessageSquareQuote, FileText, Swords, UserCheck, Coins } from "lucide-react";
 
 const links = [
   { label: "Dashboard",    href: "/admin/dashboard",    icon: LayoutDashboard },
@@ -13,6 +13,7 @@ const links = [
   { label: "Memberships",  href: "/admin/memberships",  icon: CreditCard },
   { label: "Loyalty & XP", href: "/admin/loyalty",      icon: Star },
   { label: "Challenges",   href: "/admin/challenges",   icon: Swords },
+  { label: "Oracle Pool",  href: "/admin/betting",      icon: Coins },
   { label: "Staff",        href: "/admin/staff",        icon: UserCheck },
   { label: "Analytics",    href: "/admin/analytics",    icon: BarChart3 },
   { label: "Reports",      href: "/admin/reports",      icon: FileText },

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/adminAuth";
+import { triggerMatchSettlement, triggerTournamentSettlement } from "@/lib/betting";
 
 function nextPowerOfTwo(n: number) {
   return 2 ** Math.ceil(Math.log2(n));
@@ -224,6 +225,11 @@ export async function PATCH(
     data: matchData as Parameters<typeof prisma.tournamentMatch.update>[0]["data"],
   });
 
+  // Fire betting settlement asynchronously — must not block or fail the match update
+  if ((matchData.status as string) === "completed") {
+    triggerMatchSettlement(matchId).catch((e) => console.error("[betting-hook/match]", e));
+  }
+
   const currentRound = tournament.currentRound ?? 1;
 
   // 9. For points_league: recompute standings
@@ -305,6 +311,7 @@ export async function PATCH(
         await prisma.notification.create({
           data: { message: announcementText, severity: "info" },
         });
+        triggerTournamentSettlement(id).catch((e) => console.error("[betting-hook/league]", e));
       }
     }
   }
@@ -354,6 +361,7 @@ export async function PATCH(
         await prisma.notification.create({
           data: { message: announcementText, severity: "info" },
         });
+        triggerTournamentSettlement(id).catch((e) => console.error("[betting-hook/knockout]", e));
       }
     } else {
       // 11. RACE CONDITION FIX: reload all matches fresh from DB before checking round completion
