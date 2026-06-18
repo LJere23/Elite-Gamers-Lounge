@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { generateSalt, hashPin, validatePinFormat } from "@/lib/pin";
 import { tryAwardJob } from "@/lib/jobs";
+import { trackChallenge } from "@/lib/challengeTracker";
 import { requireAdmin } from "@/lib/adminAuth";
 import { rateLimit, clientIp } from "@/lib/rateLimit";
 import { assignFounderStatus } from "@/lib/founderService";
@@ -124,11 +125,29 @@ export async function POST(request: NextRequest) {
   // different emails to farm this. Low risk in a single-lounge setting where
   // staff can verify registrations. Deactivate the job in Admin → Loyalty if abused.
   if (referredById) {
-    await tryAwardJob({
+    const referralResult = await tryAwardJob({
       jobType:   "referral",
       playerId:  referredById,
       contextId: newPlayer.id,
     });
+
+    // Notify referrer
+    const referrer = await prisma.player.findUnique({ where: { id: referredById }, select: { id: true, gamerTag: true } });
+    if (referrer) {
+      await prisma.notification.create({
+        data: {
+          playerId: referredById,
+          type:    "xp",
+          heading: "Referral Bonus!",
+          message: referralResult.awarded
+            ? `@${newPlayer.gamerTag} joined using your referral link. You earned ${referralResult.xpAwarded} XP! The Guild grows stronger.`
+            : `@${newPlayer.gamerTag} joined the Guild! Your referral has been noted.`,
+          severity: "success",
+        },
+      }).catch(() => {});
+    }
+
+    await trackChallenge(referredById, "referral", 1);
   }
 
   // Handle FoundingHero registration via founder service

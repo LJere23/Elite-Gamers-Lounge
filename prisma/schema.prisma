@@ -63,11 +63,12 @@ model Player {
   referredBy     Player?  @relation("PlayerReferrals", fields: [referredById], references: [id])
   referrals      Player[] @relation("PlayerReferrals")
 
-  titles         PlayerTitle[]
-  xpLedger       XpLedger[]
-  jobCompletions JobCompletion[]
-  entries        TournamentEntry[]
-  notifications  Notification[]
+  titles             PlayerTitle[]
+  xpLedger           XpLedger[]
+  jobCompletions     JobCompletion[]
+  entries            TournamentEntry[]
+  notifications      Notification[]
+  challengeProgress  PlayerChallengeProgress[]
 
   @@index([membershipTier])
   @@index([rank])
@@ -291,6 +292,50 @@ model Notification {
   @@index([read])
 }
 
+model StaffAccount {
+  id        String   @id @default(uuid())
+  name      String
+  pin       String
+  pinSalt   String
+  role      String   @default("staff")
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model Challenge {
+  id          String   @id @default(uuid())
+  name        String
+  description String
+  icon        String   @default("⚔")
+  type        String
+  target      Int
+  xpReward    Int      @default(10)
+  weeklyReset Boolean  @default(true)
+  active      Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  progress PlayerChallengeProgress[]
+}
+
+model PlayerChallengeProgress {
+  id          String    @id @default(uuid())
+  playerId    String
+  challengeId String
+  progress    Int       @default(0)
+  completed   Boolean   @default(false)
+  completedAt DateTime?
+  weekKey     String
+  xpAwarded   Boolean   @default(false)
+
+  player    Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  challenge Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  @@unique([playerId, challengeId, weekKey])
+  @@index([playerId])
+  @@index([weekKey])
+}
+
 model LoungeSettings {
   id                  String  @id @default("singleton")
   name                String  @default("Gweru's Gamers Lounge")
@@ -320,6 +365,12 @@ model LoungeSettings {
   // Founder system
   foundingSlotsCap       Int @default(50)
   foundingSlotsRemaining Int @default(50)
+
+  // Double XP events
+  doubleXpActive     Boolean   @default(false)
+  doubleXpMultiplier Float     @default(2.0)
+  doubleXpUntil      DateTime?
+  doubleXpLabel      String    @default("Double XP Event")
 }
 
 model TournamentTemplate {

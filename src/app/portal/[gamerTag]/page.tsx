@@ -82,6 +82,31 @@ interface GuildNotification {
   createdAt: string;
 }
 
+interface HistorySession {
+  id: string;
+  game: string;
+  deviceName: string;
+  startTime: string;
+  endTime: string;
+  durationHours: number;
+  totalPrice: number;
+  membershipCovered: boolean;
+  status: string;
+}
+
+interface Challenge {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  type: string;
+  target: number;
+  xpReward: number;
+  progress: number;
+  completed: boolean;
+  completedAt: string | null;
+}
+
 interface PortalData {
   player: Player;
   xpToNextRank: number;
@@ -331,6 +356,16 @@ export default function GuildCardPage() {
   const [pinStatus, setPinStatus] = useState<"idle" | "saving" | "success" | "error">("idle");
   const [pinError, setPinError] = useState("");
 
+  const [showHistory, setShowHistory]           = useState(false);
+  const [historyTab, setHistoryTab]             = useState<"xp" | "sessions" | "titles">("xp");
+  const [historyXp, setHistoryXp]               = useState<XpLedgerEntry[]>([]);
+  const [historySessions, setHistorySessions]   = useState<HistorySession[]>([]);
+  const [historyTitles, setHistoryTitles]       = useState<PlayerTitle[]>([]);
+  const [historyLoading, setHistoryLoading]     = useState(false);
+
+  const [challenges, setChallenges]             = useState<Challenge[]>([]);
+  const [challengeWeekKey, setChallengeWeekKey] = useState("");
+
   useEffect(() => {
     async function loadData() {
       try {
@@ -354,6 +389,13 @@ export default function GuildCardPage() {
         if (notifRes.ok) {
           const notifs: GuildNotification[] = await notifRes.json();
           if (notifs.length > 0) { setPendingNotifications(notifs); setShowNotifications(true); }
+        }
+
+        const challengesRes = await fetch(`/api/portal/${json.player.gamerTag}/challenges`);
+        if (challengesRes.ok) {
+          const cd = await challengesRes.json();
+          setChallenges(cd.challenges ?? []);
+          setChallengeWeekKey(cd.weekKey ?? "");
         }
       } catch {
         router.replace("/portal");
@@ -417,6 +459,23 @@ export default function GuildCardPage() {
   async function handleAvatarRemove() {
     await fetch("/api/portal/avatar", { method: "DELETE" });
     setAvatarUrl(null);
+  }
+
+  async function openHistory() {
+    setShowHistory(true);
+    if (historyXp.length > 0) return; // already loaded
+    setHistoryLoading(true);
+    try {
+      const res = await fetch(`/api/portal/${data?.player.gamerTag}/history`);
+      if (res.ok) {
+        const d = await res.json();
+        setHistoryXp(d.xpLedger ?? []);
+        setHistorySessions(d.sessions ?? []);
+        setHistoryTitles(d.titles ?? []);
+      }
+    } finally {
+      setHistoryLoading(false);
+    }
   }
 
   async function handleChangePin(e: React.FormEvent) {
@@ -683,7 +742,10 @@ export default function GuildCardPage() {
           {/* Recent XP Activity / Rank Trail */}
           {recentXp.length > 0 ? (
             <div>
-              <p className="text-xs font-semibold text-purple-300 uppercase tracking-wider mb-2">Recent XP Activity</p>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-semibold text-purple-300 uppercase tracking-wider">Recent XP Activity</p>
+                <button onClick={openHistory} className="text-xs text-yellow-400 hover:text-amber-300 font-semibold transition-colors">View History →</button>
+              </div>
               <div className="space-y-1.5">
                 {recentXp.map((entry) => (
                   <div key={entry.id} className="flex items-center justify-between bg-[#2a1e90]/30 rounded-xl px-4 py-2.5 border border-purple-700/20">
@@ -790,10 +852,131 @@ export default function GuildCardPage() {
         {/* ── Guild Benefits ──────────────────────────────────────────────── */}
         <GuildBenefitsPanel ps={perkStatus} membershipExpiresAt={player.membershipExpiresAt} />
 
+        {/* ── Weekly Challenges ───────────────────────────────────────────── */}
+        {challenges.length > 0 && (
+          <div className="bg-[#1E1654]/60 rounded-3xl border border-purple-500/20 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.24em] text-yellow-400/70 mb-1">This Week</p>
+                <p className="text-lg font-black text-white">Guild Challenges</p>
+              </div>
+              <span className="text-[10px] font-semibold text-purple-400/60 uppercase tracking-wider">{challengeWeekKey}</span>
+            </div>
+            <div className="space-y-3">
+              {challenges.map((ch) => {
+                const pct = Math.min(100, Math.round((ch.progress / ch.target) * 100));
+                return (
+                  <div key={ch.id} className={`rounded-2xl border px-4 py-3 ${ch.completed ? "border-emerald-500/30 bg-emerald-950/20" : "border-purple-700/30 bg-[#2a1e90]/20"}`}>
+                    <div className="flex items-center justify-between gap-3 mb-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-base shrink-0">{ch.icon}</span>
+                        <div className="min-w-0">
+                          <p className={`text-sm font-bold truncate ${ch.completed ? "text-emerald-300" : "text-white"}`}>{ch.name}</p>
+                          <p className="text-[11px] text-purple-400/70 truncate">{ch.description}</p>
+                        </div>
+                      </div>
+                      <div className="shrink-0 text-right">
+                        {ch.completed ? (
+                          <span className="text-emerald-400 text-xs font-black">Done ✓</span>
+                        ) : (
+                          <span className="text-purple-300 text-xs font-semibold">{ch.progress}/{ch.target}</span>
+                        )}
+                        <p className="text-[10px] text-yellow-400/70 font-semibold">+{ch.xpReward} XP</p>
+                      </div>
+                    </div>
+                    <div className="h-1 rounded-full bg-purple-900/40 overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all ${ch.completed ? "bg-emerald-400" : "bg-purple-400"}`}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         <div className="text-center pb-4">
           <Link href="/" className="text-sm text-purple-400 hover:text-purple-200 transition-colors">Back to Home</Link>
         </div>
       </div>
+
+      {/* ── History Modal ────────────────────────────────────────────────────── */}
+      {showHistory && (
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowHistory(false); }}
+        >
+          <div className="bg-[#1E1654] border border-purple-500/30 rounded-3xl w-full max-w-xl max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between p-5 border-b border-purple-700/30 shrink-0">
+              <h3 className="text-lg font-black text-white">Activity History</h3>
+              <button onClick={() => setShowHistory(false)} className="text-purple-400 hover:text-white text-xl leading-none">✕</button>
+            </div>
+            <div className="flex gap-1 p-3 border-b border-purple-700/20 shrink-0">
+              {(["xp", "sessions", "titles"] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setHistoryTab(tab)}
+                  className={`flex-1 rounded-xl px-3 py-2 text-xs font-bold uppercase tracking-wider transition-colors ${historyTab === tab ? "bg-purple-600 text-white" : "text-purple-400 hover:text-white"}`}
+                >
+                  {tab === "xp" ? "XP Log" : tab === "sessions" ? "Sessions" : "Titles"}
+                </button>
+              ))}
+            </div>
+            <div className="overflow-y-auto flex-1 p-4">
+              {historyLoading ? (
+                <div className="flex justify-center py-8">
+                  <div className="w-8 h-8 border-4 border-purple-500/30 border-t-yellow-400 rounded-full animate-spin" />
+                </div>
+              ) : historyTab === "xp" ? (
+                <div className="space-y-2">
+                  {historyXp.length === 0 && <p className="text-purple-400/60 text-sm text-center py-8">No XP earned yet.</p>}
+                  {historyXp.map((e) => (
+                    <div key={e.id} className="flex items-center justify-between bg-[#2a1e90]/30 rounded-xl px-4 py-2.5 border border-purple-700/20">
+                      <div className="min-w-0">
+                        <p className="text-sm text-white font-medium truncate capitalize">{e.source}</p>
+                        {e.note && <p className="text-xs text-purple-400 truncate">{e.note}</p>}
+                        <p className="text-[11px] text-purple-400/50">{formatRelativeDate(e.createdAt)}</p>
+                      </div>
+                      <span className="text-emerald-400 font-black text-sm shrink-0 ml-3">+{e.amount} XP</span>
+                    </div>
+                  ))}
+                </div>
+              ) : historyTab === "sessions" ? (
+                <div className="space-y-2">
+                  {historySessions.length === 0 && <p className="text-purple-400/60 text-sm text-center py-8">No sessions recorded yet.</p>}
+                  {historySessions.map((s) => (
+                    <div key={s.id} className="bg-[#2a1e90]/30 rounded-xl px-4 py-3 border border-purple-700/20">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-bold text-white">{s.game}</p>
+                        <span className={`text-xs font-semibold ${s.membershipCovered ? "text-emerald-400" : "text-yellow-300"}`}>
+                          {s.membershipCovered ? "Covered" : `$${s.totalPrice.toFixed(2)}`}
+                        </span>
+                      </div>
+                      <p className="text-xs text-purple-400 mt-0.5">{s.deviceName} · {s.durationHours.toFixed(1)}h</p>
+                      <p className="text-[11px] text-purple-400/50 mt-0.5">{formatRelativeDate(s.startTime)}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {historyTitles.length === 0 && <p className="text-purple-400/60 text-sm text-center py-8">No titles earned yet. Keep playing!</p>}
+                  {historyTitles.map((t) => (
+                    <div key={t.id} className="flex items-center gap-3 bg-[#2a1e90]/30 rounded-xl px-4 py-3 border border-purple-700/20">
+                      <span className="text-xl">🎖</span>
+                      <div>
+                        <p className="text-sm font-bold text-yellow-300">"{t.title}"</p>
+                        <p className="text-[11px] text-purple-400/50">{formatDate(t.awardedAt)}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {cropImageSrc && <AvatarCropModal imageSrc={cropImageSrc} onSave={handleCropSave} onCancel={handleCropCancel} />}
 

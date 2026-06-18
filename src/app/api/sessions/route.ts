@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { tryAwardJob } from "@/lib/jobs";
 import { awardVisitXP } from "@/lib/visitXP";
+import { trackChallenge } from "@/lib/challengeTracker";
 import { requireAdmin } from "@/lib/adminAuth";
+import { requireAdminOrStaff } from "@/lib/staffAuth";
 import {
   getTierRule,
   calculateGamingSessionPricing,
@@ -76,8 +78,8 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const authErr = await requireAdmin(request);
-  if (authErr) return authErr;
+  const allowed = await requireAdminOrStaff(request);
+  if (!allowed) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
   const { playerName, playerGamerTag, game, deviceId, hours } = body;
@@ -222,6 +224,7 @@ export async function POST(request: NextRequest) {
   if (playerForSession) {
     // Award visit XP + increment visitCount (always) and daily XP bonus (once per day)
     await awardVisitXP(playerForSession.id, isSessionNewDay, todayStr);
+    await trackChallenge(playerForSession.id, "sessions", 1);
 
     const sessionCount = await prisma.session.count({ where: { playerGamerTag } });
     if (sessionCount === 1) {

@@ -1,5 +1,6 @@
 import { prisma } from "./db";
 import { getTierRule } from "./membershipTiers";
+import { getDoubleXpMultiplier } from "./doubleXp";
 
 const MILESTONES = [
   { count: 10,  title: "Veteran Gamer",        bonusXp: 5  },
@@ -28,12 +29,13 @@ export async function awardVisitXP(playerId: string, isNewDay: boolean, todayStr
     const rule       = getTierRule(player.membershipTier);
     const newVisitCount = player.visitCount + 1;
     const now        = new Date();
+    const { multiplier: dxpMult } = await getDoubleXpMultiplier();
 
     let xpGained = 0;
 
     if (isNewDay) {
       // Award visit XP once per day
-      const visitXp = Math.round((1 + rule.xpVisitBonus) * rule.xpMultiplier);
+      const visitXp = Math.round((1 + rule.xpVisitBonus) * rule.xpMultiplier * dxpMult);
       if (visitXp > 0) {
         await prisma.xpLedger.create({
           data: {
@@ -51,7 +53,7 @@ export async function awardVisitXP(playerId: string, isNewDay: boolean, todayStr
     const milestone = MILESTONES.find((m) => m.count === newVisitCount);
     if (milestone) {
       // Award bonus XP
-      const bonusXp = Math.round(milestone.bonusXp * rule.xpMultiplier);
+      const bonusXp = Math.round(milestone.bonusXp * rule.xpMultiplier * dxpMult);
       await prisma.xpLedger.create({
         data: {
           playerId,

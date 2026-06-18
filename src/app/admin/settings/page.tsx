@@ -29,6 +29,10 @@ const EMPTY: LoungeSettings = {
   countdownEnabled: false,
   countdownTitle: "Next Event",
   countdownDate: "",
+  doubleXpActive: false,
+  doubleXpMultiplier: 2.0,
+  doubleXpUntil: null,
+  doubleXpLabel: "Double XP Event",
 };
 
 export default function AdminSettingsPage() {
@@ -48,7 +52,7 @@ export default function AdminSettingsPage() {
       .catch(() => setLoading(false));
   }, []);
 
-  const handleChange = (field: keyof LoungeSettings, value: string | number | boolean) => {
+  const handleChange = (field: keyof LoungeSettings, value: string | number | boolean | null) => {
     setForm((prev) => ({ ...prev, [field]: value }));
     if (status !== "idle") setStatus("idle");
   };
@@ -225,6 +229,48 @@ export default function AdminSettingsPage() {
             Target date & time
             <input type="datetime-local" value={form.countdownDate ?? ""} onChange={(e) => handleChange("countdownDate", e.target.value)} className={`${inputClass} [color-scheme:dark]`} />
           </label>
+        </div>
+
+        {/* ── Double XP Event ── */}
+        <div className="space-y-5 rounded-[2rem] border border-white/10 bg-zinc-950 p-6">
+          <div>
+            <p className="text-xs uppercase tracking-[0.24em] text-amber-400">Double XP Events</p>
+            <h2 className="mt-2 text-xl font-black text-white">XP Multiplier</h2>
+            <p className="text-sm text-zinc-500 mt-1">Enable a multiplier on all XP earned — applies to visit XP, job rewards, and challenge completions.</p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => handleChange("doubleXpActive", !form.doubleXpActive)}
+              className={`relative w-12 h-6 rounded-full transition-colors ${form.doubleXpActive ? "bg-amber-500" : "bg-zinc-700"}`}
+            >
+              <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${form.doubleXpActive ? "left-7" : "left-1"}`} />
+            </button>
+            <span className="text-sm font-semibold text-slate-100">{form.doubleXpActive ? "Active — XP multiplier ON" : "Inactive"}</span>
+          </div>
+
+          {form.doubleXpActive && (
+            <div className="grid gap-4 sm:grid-cols-3">
+              <label className="block text-sm font-semibold text-slate-100 sm:col-span-1">
+                Label
+                <input type="text" value={form.doubleXpLabel ?? ""} onChange={(e) => handleChange("doubleXpLabel", e.target.value)}
+                  placeholder="Double XP Weekend" className={inputClass} />
+              </label>
+              <label className="block text-sm font-semibold text-slate-100">
+                Multiplier
+                <input type="number" min="1" max="10" step="0.5" value={form.doubleXpMultiplier ?? 2}
+                  onChange={(e) => handleChange("doubleXpMultiplier", parseFloat(e.target.value))}
+                  className={inputClass} />
+              </label>
+              <label className="block text-sm font-semibold text-slate-100">
+                Ends at (optional)
+                <input type="datetime-local" value={form.doubleXpUntil ? form.doubleXpUntil.replace("Z", "") : ""}
+                  onChange={(e) => handleChange("doubleXpUntil", e.target.value ? new Date(e.target.value).toISOString() : null)}
+                  className={`${inputClass} [color-scheme:dark]`} />
+              </label>
+            </div>
+          )}
         </div>
 
         {/* ── Save ── */}

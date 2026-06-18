@@ -56,6 +56,14 @@ const PRESETS = [
   { label: "Last 30d",  from: () => daysAgo(30), to: today   },
 ];
 
+interface DailySummary {
+  total: number;
+  sessions: number;
+  wifi: number;
+  tournaments: number;
+  count: number;
+}
+
 export default function AdminReportsPage() {
   const [from, setFrom]         = useState(startOfMonth());
   const [to, setTo]             = useState(today());
@@ -63,6 +71,7 @@ export default function AdminReportsPage() {
   const [report, setReport]     = useState<Report | null>(null);
   const [loading, setLoading]   = useState(false);
   const [autoDaily, setAutoDaily] = useState(false);
+  const [dailySummary, setDailySummary] = useState<DailySummary | null>(null);
 
   const fetchReport = useCallback(async () => {
     setLoading(true);
@@ -76,6 +85,19 @@ export default function AdminReportsPage() {
   }, [from, to, type]);
 
   useEffect(() => { fetchReport(); }, [fetchReport]);
+
+  useEffect(() => {
+    const t = today();
+    fetch(`/api/admin/reports?from=${t}&to=${t}&type=all&format=json`)
+      .then((r) => r.json())
+      .then((d: Report) => {
+        const sessionRev    = d.rows.filter((r) => r.type === "session").reduce((s, r) => s + parseFloat(r.revenue), 0);
+        const wifiRev       = d.rows.filter((r) => r.type === "wifi").reduce((s, r) => s + parseFloat(r.revenue), 0);
+        const tournamentRev = d.rows.filter((r) => r.type === "tournament").reduce((s, r) => s + parseFloat(r.revenue), 0);
+        setDailySummary({ total: d.totalRevenue, sessions: sessionRev, wifi: wifiRev, tournaments: tournamentRev, count: d.count });
+      })
+      .catch(() => {});
+  }, []);
 
   const downloadCSV = () => {
     const url = `/api/admin/reports?from=${from}&to=${to}&type=${type}&format=csv`;
@@ -100,6 +122,37 @@ export default function AdminReportsPage() {
         title="Reports"
         description="Download transaction records for any date range — sessions, WiFi, tournaments."
       />
+
+      {/* Daily Cash Summary */}
+      {dailySummary && (
+        <div className="rounded-[2rem] border border-emerald-500/20 bg-emerald-950/10 p-6">
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+            <div>
+              <p className="text-xs uppercase tracking-[0.24em] text-emerald-400">Today&apos;s Cash</p>
+              <p className="text-3xl font-black text-white mt-1">${dailySummary.total.toFixed(2)}</p>
+              <p className="text-xs text-slate-500 mt-0.5">{new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })} · {dailySummary.count} transactions</p>
+            </div>
+            <button onClick={downloadTodayCSV}
+              className="rounded-3xl border border-emerald-500/30 bg-emerald-500/10 px-5 py-2.5 text-sm font-bold text-emerald-400 hover:bg-emerald-500/20 transition">
+              ⬇ Export Today
+            </button>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="bg-black/20 rounded-2xl p-4 border border-white/5">
+              <p className="text-[10px] uppercase tracking-widest text-cyan-400 mb-1">Sessions</p>
+              <p className="text-xl font-black text-white">${dailySummary.sessions.toFixed(2)}</p>
+            </div>
+            <div className="bg-black/20 rounded-2xl p-4 border border-white/5">
+              <p className="text-[10px] uppercase tracking-widest text-yellow-400 mb-1">Wi-Fi</p>
+              <p className="text-xl font-black text-white">${dailySummary.wifi.toFixed(2)}</p>
+            </div>
+            <div className="bg-black/20 rounded-2xl p-4 border border-white/5">
+              <p className="text-[10px] uppercase tracking-widest text-orange-400 mb-1">Tournaments</p>
+              <p className="text-xl font-black text-white">${dailySummary.tournaments.toFixed(2)}</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Controls */}
       <div className="rounded-[2rem] border border-white/10 bg-slate-950/80 p-8 space-y-6">

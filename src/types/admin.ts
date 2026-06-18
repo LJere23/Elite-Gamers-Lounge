@@ -196,6 +196,36 @@ export interface LoungeSettings {
   countdownEnabled?: boolean;
   countdownTitle?: string;
   countdownDate?: string;
+  // Founder system
+  foundingSlotsCap?: number;
+  foundingSlotsRemaining?: number;
+  // Double XP events
+  doubleXpActive?: boolean;
+  doubleXpMultiplier?: number;
+  doubleXpUntil?: string | null;
+  doubleXpLabel?: string;
+}
+
+export interface Challenge {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  type: string;
+  target: number;
+  xpReward: number;
+  weeklyReset: boolean;
+  active: boolean;
+  sortOrder: number;
+  createdAt: string;
+}
+
+export interface StaffAccount {
+  id: string;
+  name: string;
+  role: string;
+  active: boolean;
+  createdAt: string;
 }
 
 /*

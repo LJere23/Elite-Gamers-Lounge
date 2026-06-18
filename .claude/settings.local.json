@@ -22,7 +22,9 @@
       "Bash(git push *)",
       "Bash(git rm *)",
       "Bash(npx next *)",
-      "Bash(xargs sed -i \"s/Gweru's Gamers Lounge/Elite Gamers Lounge/g; s/Gweru&apos;s Gamers Lounge/Elite Gamers Lounge/g; s/Gweru Gamers Lounge/Elite Gamers Lounge/g; s/GWERU GAMERS LOUNGE/ELITE GAMERS LOUNGE/g; s/gwerusgamerslounge\\\\.com/elitegamerslounge\\\\.com/g\")"
+      "Bash(xargs sed -i \"s/Gweru's Gamers Lounge/Elite Gamers Lounge/g; s/Gweru&apos;s Gamers Lounge/Elite Gamers Lounge/g; s/Gweru Gamers Lounge/Elite Gamers Lounge/g; s/GWERU GAMERS LOUNGE/ELITE GAMERS LOUNGE/g; s/gwerusgamerslounge\\\\.com/elitegamerslounge\\\\.com/g\")",
+      "Bash(git commit *)",
+      "Bash(node *)"
     ]
   }
 }

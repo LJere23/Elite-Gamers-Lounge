@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { tryAwardJob } from "@/lib/jobs";
+import { trackChallenge } from "@/lib/challengeTracker";
 import { requireAdmin } from "@/lib/adminAuth";
 import { calculateTournamentPricing, classifyTournament, nextMonthEnd } from "@/lib/membershipTiers";
 
@@ -102,6 +103,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
       contextId: tournamentId,
       xpOverride: tournament.xpReward > 0 ? tournament.xpReward : undefined,
     });
+    await trackChallenge(player.id, "tournament_entry", 1);
 
     return NextResponse.json(
       {

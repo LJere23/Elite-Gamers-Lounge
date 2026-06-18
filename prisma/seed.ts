@@ -74,6 +74,53 @@ const SEED_GAMES = [
   "Call Of Duty",
 ];
 
+const SEED_CHALLENGES = [
+  {
+    name: "Regular",
+    description: "Play 3 gaming sessions this week",
+    icon: "🎮",
+    type: "sessions",
+    target: 3,
+    xpReward: 15,
+    weeklyReset: true,
+    active: true,
+    sortOrder: 1,
+  },
+  {
+    name: "Dedicated",
+    description: "Play 5 gaming sessions this week",
+    icon: "⚔",
+    type: "sessions",
+    target: 5,
+    xpReward: 30,
+    weeklyReset: true,
+    active: true,
+    sortOrder: 2,
+  },
+  {
+    name: "Tournament Fighter",
+    description: "Enter a tournament this week",
+    icon: "🏆",
+    type: "tournament_entry",
+    target: 1,
+    xpReward: 20,
+    weeklyReset: true,
+    active: true,
+    sortOrder: 3,
+  },
+  {
+    name: "Recruiter",
+    description: "Refer a new player to the Guild this week",
+    icon: "🤝",
+    type: "referral",
+    target: 1,
+    xpReward: 25,
+    weeklyReset: true,
+    active: true,
+    sortOrder: 4,
+  },
+];
+
 const SEED_TEMPLATES = [
   {
     templateName: "Friday Mini-Tourney",
@@ -222,6 +269,18 @@ async function main() {
     } else {
       await prisma.tournamentTemplate.create({ data: tpl });
       console.log(`  ✓ Created: ${tpl.templateName}`);
+    }
+  }
+
+  console.log("Seeding challenges…");
+  for (const ch of SEED_CHALLENGES) {
+    const existing = await prisma.challenge.findFirst({ where: { name: ch.name } });
+    if (existing) {
+      await prisma.challenge.update({ where: { id: existing.id }, data: ch });
+      console.log(`  ↻ Updated: ${ch.name}`);
+    } else {
+      await prisma.challenge.create({ data: ch });
+      console.log(`  ✓ Created: ${ch.name}`);
     }
   }
 

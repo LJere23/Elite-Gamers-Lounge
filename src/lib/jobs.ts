@@ -1,4 +1,5 @@
 import { prisma } from "./db";
+import { getDoubleXpMultiplier } from "./doubleXp";
 
 function computeRank(xp: number, visitCount: number): string {
   if (visitCount < 3) return "Villager";
@@ -60,7 +61,8 @@ export async function tryAwardJob({
 
     const multiplier  = getXpMultiplier(player.membershipTier);
     const baseXp      = xpOverride !== undefined ? xpOverride : job.xpReward;
-    const finalAmount = Math.round(baseXp * multiplier);
+    const { multiplier: dxpMult } = await getDoubleXpMultiplier();
+    const finalAmount = Math.round(baseXp * multiplier * dxpMult);
 
     const { rankChanged, newRank } = await prisma.$transaction(async (tx) => {
       await tx.jobCompletion.create({
