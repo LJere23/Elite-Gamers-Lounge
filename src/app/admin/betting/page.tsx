@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
+import GamerTagInput from "@/components/admin/GamerTagInput";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -533,9 +534,13 @@ export default function AdminBettingPage() {
             </div>
 
             <form onSubmit={handleAddAccess} className="flex gap-2">
-              <input value={accessPlayer} onChange={(e) => setAccessPlayer(e.target.value)}
-                placeholder="@gamerTag" required
-                className="flex-1 rounded-3xl border border-white/10 bg-black/40 px-4 py-2.5 text-white text-sm outline-none focus:border-cyan-400" />
+              <GamerTagInput
+                value={accessPlayer}
+                onChange={setAccessPlayer}
+                placeholder="@gamerTag"
+                required
+                className="flex-1 rounded-3xl border border-white/10 bg-black/40 px-4 py-2.5 text-white text-sm outline-none focus:border-cyan-400"
+              />
               <button type="submit" disabled={loading || !accessPlayer.trim()}
                 className="rounded-3xl bg-cyan-500 hover:bg-cyan-400 disabled:opacity-60 text-black font-bold text-sm px-5 py-2.5 transition">
                 Add
@@ -575,8 +580,13 @@ export default function AdminBettingPage() {
             <form onSubmit={handleCxpAdjust} className="space-y-4">
               <label className="block text-sm font-semibold text-slate-100">
                 GamerTag
-                <input value={cxpForm.gamerTag} onChange={(e) => setCxpForm((f) => ({ ...f, gamerTag: e.target.value }))}
-                  required placeholder="@gamerTag" className={inputCls} />
+                <GamerTagInput
+                  value={cxpForm.gamerTag}
+                  onChange={(v) => setCxpForm((f) => ({ ...f, gamerTag: v }))}
+                  placeholder="@gamerTag"
+                  required
+                  className={inputCls}
+                />
               </label>
               <label className="block text-sm font-semibold text-slate-100">
                 Amount (positive = credit, negative = debit)
